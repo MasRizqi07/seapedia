@@ -1,0 +1,238 @@
+// ═══════════════════════════════════════════
+// SEAPEDIA — Prisma Schema
+// ═══════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Enums ──────────────────────────────────
+
+enum Role {
+  ADMIN
+  SELLER
+  BUYER
+  DRIVER
+}
+
+enum OrderStatus {
+  PACKING
+  WAITING_DRIVER
+  SHIPPING
+  COMPLETED
+  RETURNED
+}
+
+enum DeliveryMethod {
+  INSTANT
+  NEXT_DAY
+  REGULAR
+}
+
+enum DiscountType {
+  PERCENT
+  FIXED
+}
+
+enum WalletTxType {
+  TOPUP
+  PAYMENT
+  REFUND
+}
+
+enum JobStatus {
+  AVAILABLE
+  TAKEN
+  COMPLETED
+}
+
+// ── Models ─────────────────────────────────
+
+model User {
+  id           String      @id @default(cuid())
+  username     String      @unique
+  email        String      @unique
+  passwordHash String
+  roles        UserRole[]
+  store        Store?
+  wallet       Wallet?
+  addresses    Address[]
+  cart         Cart?       @relation("BuyerCart")
+  orders       Order[]     @relation("BuyerOrders")
+  createdAt    DateTime    @default(now())
+  
+  // Backwards compatibility with existing fields from initial draft (if needed)
+  name         String
+  phone        String?
+  avatarUrl    String?
+  refreshToken String?
+}
+
+model UserRole {
+  userId String
+  role   Role
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+}
+
+model Store {
+  id       String    @id @default(cuid())
+  sellerId String    @unique
+  name     String    @unique
+  user     User      @relation(fields: [sellerId], references: [id])
+  products Product[]
+  orders   Order[]
+  carts    Cart[]
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id])
+  name        String
+  description String
+  price       Int
+  stock       Int
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+}
+
+model Cart {
+  id      String     @id @default(cuid())
+  buyerId String     @unique
+  buyer   User       @relation("BuyerCart", fields: [buyerId], references: [id])
+  storeId String?
+  store   Store?     @relation(fields: [storeId], references: [id])
+  items   CartItem[]
+}
+
+model CartItem {
+  cartId    String
+  productId String
+  quantity  Int
+  cart      Cart    @relation(fields: [cartId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@unique([cartId, productId])
+}
+
+model Wallet {
+  id           String              @id @default(cuid())
+  buyerId      String              @unique
+  user         User                @relation(fields: [buyerId], references: [id])
+  balance      Int                 @default(0)
+  transactions WalletTransaction[]
+}
+
+model WalletTransaction {
+  id               String       @id @default(cuid())
+  walletId         String
+  wallet           Wallet       @relation(fields: [walletId], references: [id])
+  type             WalletTxType
+  amount           Int
+  referenceOrderId String?
+  createdAt        DateTime     @default(now())
+}
+
+model Address {
+  id            String  @id @default(cuid())
+  buyerId       String
+  user          User    @relation(fields: [buyerId], references: [id])
+  label         String
+  recipientName String
+  phone         String
+  fullAddress   String
+  isDefault     Boolean @default(false)
+}
+
+model Order {
+  id             String               @id @default(cuid())
+  buyerId        String
+  storeId        String
+  buyer          User                 @relation("BuyerOrders", fields: [buyerId], references: [id])
+  store          Store                @relation(fields: [storeId], references: [id])
+  deliveryMethod DeliveryMethod
+  subtotal       Int
+  discountAmount Int                  @default(0)
+  deliveryFee    Int
+  ppnAmount      Int
+  totalAmount    Int
+  voucherId      String?
+  promoId        String?
+  status         OrderStatus          @default(PACKING)
+  slaDueAt       DateTime?
+  items          OrderItem[]
+  history        OrderStatusHistory[]
+  deliveryJob    DeliveryJob?
+  createdAt      DateTime             @default(now())
+}
+
+model OrderItem {
+  orderId         String
+  productId       String
+  quantity        Int
+  priceAtPurchase Int
+  order           Order   @relation(fields: [orderId], references: [id])
+  product         Product @relation(fields: [productId], references: [id])
+
+  @@id([orderId, productId])
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(cuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id])
+  status    OrderStatus
+  note      String?
+  changedAt DateTime    @default(now())
+}
+
+model Voucher {
+  id           String       @id @default(cuid())
+  code         String       @unique
+  discountType DiscountType
+  value        Int
+  expiryDate   DateTime
+  usageLimit   Int
+  usedCount    Int          @default(0)
+}
+
+model Promo {
+  id           String       @id @default(cuid())
+  code         String       @unique
+  discountType DiscountType
+  value        Int
+  expiryDate   DateTime
+}
+
+model DeliveryJob {
+  id          String    @id @default(cuid())
+  orderId     String    @unique
+  order       Order     @relation(fields: [orderId], references: [id])
+  driverId    String?
+  status      JobStatus @default(AVAILABLE)
+  earnings    Int
+  takenAt     DateTime?
+  completedAt DateTime?
+}
+
+model Review {
+  id           String   @id @default(cuid())
+  reviewerName String
+  rating       Int
+  comment      String
+  createdAt    DateTime @default(now())
+}
+
+model SystemConfig {
+  id            String @id @default(cuid())
+  clockOffsetMs Int    @default(0)
+}

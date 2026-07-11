@@ -1,0 +1,7 @@
+{
+  "name": "@seapedia/config",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./tsconfig.base.json",
+  "files": ["tsconfig.base.json", "eslint.js"]
+}
