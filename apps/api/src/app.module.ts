@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
@@ -18,6 +18,7 @@ import { SystemConfigModule } from './system-config/system-config.module';
 import { SchedulerModule } from './scheduler/scheduler.module';
 import { AdminModule } from './admin/admin.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { TenantIsolationInterceptor } from './prisma/tenant-isolation.interceptor';
 
 @Module({
   imports: [
@@ -43,6 +44,10 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TenantIsolationInterceptor,
     },
   ],
 })
