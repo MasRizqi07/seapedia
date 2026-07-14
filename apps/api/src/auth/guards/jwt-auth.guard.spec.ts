@@ -1,11 +1,16 @@
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
+import { Reflector } from '@nestjs/core';
+
 describe('JwtAuthGuard', () => {
   let guard: JwtAuthGuard;
 
   beforeEach(() => {
-    guard = new JwtAuthGuard();
+    const mockReflector = {
+      getAllAndOverride: jest.fn(),
+    } as unknown as Reflector;
+    guard = new JwtAuthGuard(mockReflector);
   });
 
   it('should be defined', () => {
