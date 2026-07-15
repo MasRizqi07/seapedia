@@ -1,0 +1,17 @@
+Command executed:
+pnpm --filter api test
+
+Response output:
+PASS src/prisma/tenant-isolation.interceptor.spec.ts (5.14 s)
+PASS src/auth/guards/jwt-auth.guard.spec.ts (5.131 s)
+PASS src/orders/orders.controller.spec.ts (5.793 s)
+PASS src/cart/cart.controller.spec.ts (5.756 s)
+PASS src/wallet/wallet.controller.spec.ts (5.778 s)
+PASS src/tenant-isolation.integration.spec.ts (6.056 s)
+PASS src/public-routes.spec.ts (6.39 s)
+
+Test Suites: 7 passed, 7 total
+Tests:       20 passed, 20 total
+Snapshots:   0 total
+Time:        7.189 s
+Ran all test suites.

@@ -16,14 +16,6 @@ export class TenantIsolationInterceptor implements NestInterceptor {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
-    // Determine storeId (tenantId)
-    // 1. Check header x-store-id or x-tenant-id or storeId parameter
-    const storeId =
-      request.headers['x-store-id'] ||
-      request.headers['x-tenant-id'] ||
-      request.query['storeId'] ||
-      request.body['storeId'];
-
     return new Observable((subscriber) => {
       const runWithContext = (id?: string) => {
         tenantContext.run(
@@ -39,8 +31,8 @@ export class TenantIsolationInterceptor implements NestInterceptor {
         );
       };
 
-      if (!storeId && user) {
-        // If it's a seller, resolve their store ID
+      if (user) {
+        // Authenticated request: Resolve storeId server-side from user metadata, ignore client inputs
         if (user.roles?.includes('SELLER') || user.activeRole === 'SELLER') {
           this.prisma.store
             .findUnique({
@@ -54,9 +46,17 @@ export class TenantIsolationInterceptor implements NestInterceptor {
             });
           return;
         }
+        // BUYER, DRIVER, ADMIN: No store-scoping needed for their own context
+        runWithContext(undefined);
+      } else {
+        // Unauthenticated request (e.g. public routes): Can fall back to client-supplied storeId
+        const storeId =
+          request.headers['x-store-id'] ||
+          request.headers['x-tenant-id'] ||
+          request.query['storeId'] ||
+          request.body['storeId'];
+        runWithContext(storeId);
       }
-
-      runWithContext(storeId);
     });
   }
 }

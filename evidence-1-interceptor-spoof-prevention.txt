@@ -1,0 +1,5 @@
+Command executed:
+curl.exe -s -X GET http://localhost:4000/api/seller/orders -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbXJscnVteWMwMDAwZmJmdHZ3dnZucGRhIiwidXNlcm5hbWUiOiJzZWxsZXJhIiwicm9sZXMiOlsiU0VMTEVSIiwiQlVZRVIiXSwiYWN0aXZlUm9sZSI6IlNFTExFUiIsImlhdCI6MTc4NDEwMTczOSwiZXhwIjoxNzg0MTAyNjM5fQ.PL3uPLpwSX5FVhF64mhw54BlVKKkYlRlwJOrJCBNtbw" -H "x-store-id: cmrlrumyv0006fbft8o51b6rj"
+
+Response output:
+[{"id":"cmrlrumz0000cfbfty3pnfiev","buyerId":"cmrlrumyo0002fbftesf0ispd","storeId":"cmrlrumyq0004fbftkpqbukjc","deliveryMethod":"REGULAR","subtotal":10000,"discountAmount":0,"deliveryFee":5000,"ppnAmount":1650,"totalAmount":18315,"voucherId":null,"promoId":null,"status":"PACKING","slaDueAt":null,"createdAt":"2026-07-15T07:41:41.964Z","items":[{"orderId":"cmrlrumz0000cfbfty3pnfiev","productId":"cmrlrumyw0008fbftwu28thb7","quantity":1,"priceAtPurchase":10000,"product":{"name":"Product A","imageUrl":null}}]}]
