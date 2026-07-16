@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, CanActivate, ExecutionContext } from '@nestjs/common';
+import { INestApplication, ExecutionContext } from '@nestjs/common';
 import request from 'supertest';
-import { APP_GUARD, APP_INTERCEPTOR, Reflector } from '@nestjs/core';
+import { APP_INTERCEPTOR, Reflector } from '@nestjs/core';
 import { TenantIsolationInterceptor } from './prisma/tenant-isolation.interceptor';
 import { PrismaService } from './prisma/prisma.service';
 import { tenantContext } from './prisma/tenant-context';
