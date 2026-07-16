@@ -43,7 +43,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           const payload = JSON.parse(atob(accessToken.split('.')[1]));
           activeRole = payload.activeRole || null;
-        } catch { /* swallow JWT parse errors — activeRole defaults to null */ }
+        } catch { /* JWT decode failed — activeRole stays null */ }
 
         set({ user, accessToken, refreshToken, activeRole });
 
@@ -58,7 +58,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           const payload = JSON.parse(atob(accessToken.split('.')[1]));
           activeRole = payload.activeRole || null;
-        } catch { /* swallow JWT parse errors — activeRole defaults to null */ }
+        } catch { /* JWT decode failed — activeRole stays null */ }
 
         set({ accessToken, refreshToken, activeRole });
 
