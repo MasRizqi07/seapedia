@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  CanActivate,
-  ExecutionContext,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { Role } from '@prisma/client';
@@ -47,16 +42,12 @@ export class RolesGuard implements CanActivate {
     const activeRole = user.activeRole;
 
     if (!activeRole) {
-      throw new ForbiddenException(
-        'Please select an active role first (POST /auth/select-role)',
-      );
+      throw new ForbiddenException('Please select an active role first (POST /auth/select-role)');
     }
 
     // Verify active role is one of the roles allowed for this endpoint
     if (!requiredRoles.includes(activeRole as Role)) {
-      throw new ForbiddenException(
-        'Insufficient permissions for this action',
-      );
+      throw new ForbiddenException('Insufficient permissions for this action');
     }
 
     return true;

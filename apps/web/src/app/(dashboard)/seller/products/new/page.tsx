@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,9 +41,10 @@ export default function NewProductPage() {
       });
 
       toast({ title: 'Product created!', description: `${form.name} has been added.` });
-      router.push('/dashboard/seller/products');
-    } catch (err: any) {
-      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+      router.push('/seller/products');
+    } catch (err: unknown) {
+      const message = err instanceof ApiError ? err.message : 'Failed to create product';
+      toast({ title: 'Error', description: message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -52,7 +53,7 @@ export default function NewProductPage() {
   return (
     <div className="space-y-6 animate-in fade-in zoom-in duration-500">
       <div className="flex items-center gap-4">
-        <Link href="/dashboard/seller/products">
+        <Link href="/seller/products">
           <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white">
             <ArrowLeft className="mr-1 h-4 w-4" />
             Back

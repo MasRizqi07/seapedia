@@ -38,18 +38,12 @@ export class JobsController {
   }
 
   @Post('jobs/:id/take')
-  takeJob(
-    @CurrentUser('userId') driverId: string,
-    @Param('id') jobId: string
-  ) {
+  takeJob(@CurrentUser('userId') driverId: string, @Param('id') jobId: string) {
     return this.jobsService.takeJob(driverId, jobId);
   }
 
   @Post('jobs/:id/complete')
-  completeJob(
-    @CurrentUser('userId') driverId: string,
-    @Param('id') jobId: string
-  ) {
+  completeJob(@CurrentUser('userId') driverId: string, @Param('id') jobId: string) {
     return this.jobsService.completeJob(driverId, jobId);
   }
 }

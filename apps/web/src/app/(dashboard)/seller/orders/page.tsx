@@ -1,26 +1,31 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 import { OrderResponse } from '@seapedia/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { toast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { formatRupiah } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth-store';
 import { Package } from 'lucide-react';
 
 export default function SellerOrdersPage() {
   const { activeRole } = useAuthStore();
+  const { toast } = useToast();
   const [orders, setOrders] = useState<OrderResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   const fetchOrders = () => {
     if (activeRole === 'SELLER') {
-      api.get<OrderResponse[]>('/api/seller/orders')
+      api
+        .get<OrderResponse[]>('/api/seller/orders')
         .then(setOrders)
-        .catch(err => toast({ title: 'Error loading orders', description: err.message, variant: 'destructive' }))
+        .catch((err: unknown) => {
+          const message = err instanceof ApiError ? err.message : 'Error loading orders';
+          toast({ title: 'Error loading orders', description: message, variant: 'destructive' });
+        })
         .finally(() => setLoading(false));
     }
   };
@@ -35,15 +40,16 @@ export default function SellerOrdersPage() {
       await api.patch(`/api/seller/orders/${orderId}/process`, {});
       toast({ title: 'Order processed successfully!' });
       fetchOrders();
-    } catch (err: any) {
-      toast({ title: 'Failed to process order', description: err.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      const message = err instanceof ApiError ? err.message : 'Failed to process order';
+      toast({ title: 'Failed to process order', description: message, variant: 'destructive' });
     } finally {
       setProcessingId(null);
     }
   };
 
   if (activeRole !== 'SELLER') return null;
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div className="p-4 text-text-secondary">Loading orders...</div>;
 
   return (
     <div className="space-y-6">
@@ -66,7 +72,8 @@ export default function SellerOrdersPage() {
                   </CardTitle>
                   <div className="text-xs text-muted-foreground mt-1">
                     {new Date(order.createdAt).toLocaleString('id-ID', {
-                      dateStyle: 'medium', timeStyle: 'short'
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
                     })}
                   </div>
                 </div>
@@ -77,11 +84,15 @@ export default function SellerOrdersPage() {
               <CardContent className="pt-4">
                 <div className="flex justify-between items-start">
                   <div className="space-y-3 flex-1">
-                    {order.items?.map(item => (
+                    {order.items?.map((item) => (
                       <div key={item.productId} className="flex gap-3 items-center">
                         <div className="w-10 h-10 bg-slate-100 rounded overflow-hidden flex-shrink-0 flex items-center justify-center">
                           {item.product?.imageUrl ? (
-                            <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" />
+                            <img
+                              src={item.product.imageUrl}
+                              alt={item.product.name}
+                              className="w-full h-full object-cover"
+                            />
                           ) : (
                             <Package className="w-5 h-5 text-slate-400" />
                           )}
@@ -95,13 +106,15 @@ export default function SellerOrdersPage() {
                       </div>
                     ))}
                   </div>
-                  
+
                   <div className="text-right ml-4 pl-4 border-l flex flex-col justify-between">
                     <div>
                       <div className="text-xs text-muted-foreground mb-1">Total Revenue</div>
                       <div className="font-bold text-ocean-600">{formatRupiah(order.subtotal)}</div>
                       <div className="text-xs text-muted-foreground mt-2">Delivery</div>
-                      <div className="text-sm font-medium">{order.deliveryMethod.replace('_', ' ')}</div>
+                      <div className="text-sm font-medium">
+                        {order.deliveryMethod.replace('_', ' ')}
+                      </div>
                     </div>
                     {order.status === 'PACKING' && (
                       <div className="mt-4">

@@ -2,46 +2,46 @@ import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/commo
 import { PrismaClient } from '@prisma/client';
 import { tenantContext } from './tenant-context';
 
+type DynamicModelDelegate = Record<string, (args: unknown) => Promise<unknown>>;
+type DynamicTxClient = Record<string, DynamicModelDelegate>;
+
 @Injectable()
-export class PrismaService
-  extends PrismaClient
-  implements OnModuleInit, OnModuleDestroy
-{
+export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
     super();
-    const self = this;
 
     const extended = this.$extends({
       query: {
         $allModels: {
-          async $allOperations({ model, operation, args, query }) {
+          $allOperations: async ({ model, operation, args, query }) => {
             const context = tenantContext.getStore();
             if (!context || !context.storeId) {
               return query(args);
             }
 
-            return self.$transaction(async (tx) => {
-              await tx.$executeRawUnsafe(
-                `SELECT set_config('app.current_tenant_id', $1, true)`,
-                context.storeId,
-              );
-              // @ts-ignore
-              return tx[model][operation](args);
+            return this.$transaction(async (tx) => {
+              await tx.$executeRaw`SELECT set_config('app.current_tenant_id', ${context.storeId}, true)`;
+              const delegate = (tx as unknown as DynamicTxClient)[model];
+              if (delegate && typeof delegate[operation] === 'function') {
+                return delegate[operation](args);
+              }
+              return query(args);
             });
           },
         },
       },
     });
 
-    (extended as any).onModuleInit = async () => {
-      await self.$connect();
-    };
-
-    (extended as any).onModuleDestroy = async () => {
-      await self.$disconnect();
-    };
+    Object.assign(extended, {
+      onModuleInit: async () => {
+        await this.$connect();
+      },
+      onModuleDestroy: async () => {
+        await this.$disconnect();
+      },
+    });
 
     return extended as unknown as this;
   }

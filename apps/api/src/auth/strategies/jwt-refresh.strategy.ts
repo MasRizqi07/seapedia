@@ -11,10 +11,7 @@ import { Request } from 'express';
  * it against the stored bcrypt hash.
  */
 @Injectable()
-export class JwtRefreshStrategy extends PassportStrategy(
-  Strategy,
-  'jwt-refresh',
-) {
+export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
   constructor(configService: ConfigService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),

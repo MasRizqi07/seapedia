@@ -1,14 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
+import { ProductResponse } from '@seapedia/types';
 import { useToast } from '@/components/ui/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Package, Plus, Pencil, Trash2 } from 'lucide-react';
-import type { ProductResponse } from '@seapedia/types';
+import { Plus, Package, Pencil, Trash2 } from 'lucide-react';
 
 export default function SellerProductsPage() {
   const { toast } = useToast();
@@ -19,15 +19,16 @@ export default function SellerProductsPage() {
     try {
       const data = await api.get<ProductResponse[]>('/api/seller/products');
       setProducts(data);
-    } catch (err: any) {
-      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      const message = err instanceof ApiError ? err.message : 'Error fetching products';
+      toast({ title: 'Error', description: message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchProducts();
+    void fetchProducts();
   }, []);
 
   const handleDelete = async (id: string, name: string) => {
@@ -37,8 +38,9 @@ export default function SellerProductsPage() {
       await api.delete(`/api/seller/products/${id}`);
       setProducts((prev) => prev.filter((p) => p.id !== id));
       toast({ title: 'Product deleted' });
-    } catch (err: any) {
-      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      const message = err instanceof ApiError ? err.message : 'Error deleting product';
+      toast({ title: 'Error', description: message, variant: 'destructive' });
     }
   };
 
@@ -64,9 +66,11 @@ export default function SellerProductsPage() {
             <Package className="h-8 w-8 text-cyan-400" />
             Products
           </h2>
-          <p className="text-slate-300 mt-1">{products.length} product{products.length !== 1 ? 's' : ''} listed</p>
+          <p className="text-slate-300 mt-1">
+            {products.length} product{products.length !== 1 ? 's' : ''} listed
+          </p>
         </div>
-        <Link href="/dashboard/seller/products/new">
+        <Link href="/seller/products/new">
           <Button className="bg-cyan-600 hover:bg-cyan-500 text-white">
             <Plus className="mr-2 h-4 w-4" />
             Add Product
@@ -78,7 +82,7 @@ export default function SellerProductsPage() {
         <Card className="glass border-white/10 bg-white/5 p-12 text-center">
           <Package className="h-16 w-16 text-slate-600 mx-auto mb-4" />
           <p className="text-lg text-slate-300 mb-4">No products yet.</p>
-          <Link href="/dashboard/seller/products/new">
+          <Link href="/seller/products/new">
             <Button className="bg-cyan-600 hover:bg-cyan-500 text-white">
               <Plus className="mr-2 h-4 w-4" />
               Add Your First Product
@@ -88,7 +92,10 @@ export default function SellerProductsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {products.map((product) => (
-            <Card key={product.id} className="glass border-white/10 bg-white/5 hover:border-cyan-500/30 transition-colors overflow-hidden">
+            <Card
+              key={product.id}
+              className="glass border-white/10 bg-white/5 hover:border-cyan-500/30 transition-colors overflow-hidden"
+            >
               {/* Image */}
               <div className="h-40 bg-slate-800 flex items-center justify-center overflow-hidden">
                 {product.imageUrl ? (
@@ -104,7 +111,9 @@ export default function SellerProductsPage() {
 
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-semibold text-white text-lg leading-tight line-clamp-1">{product.name}</h3>
+                  <h3 className="font-semibold text-white text-lg leading-tight line-clamp-1">
+                    {product.name}
+                  </h3>
                   {stockBadge(product.stock)}
                 </div>
 
@@ -115,8 +124,12 @@ export default function SellerProductsPage() {
                 </div>
 
                 <div className="flex gap-2 pt-2 border-t border-white/10">
-                  <Link href={`/dashboard/seller/products/${product.id}/edit`} className="flex-1">
-                    <Button variant="outline" size="sm" className="w-full border-white/10 text-slate-300 hover:text-white">
+                  <Link href={`/seller/products/${product.id}/edit`} className="flex-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-white/10 text-slate-300 hover:text-white"
+                    >
                       <Pencil className="mr-1 h-3 w-3" />
                       Edit
                     </Button>

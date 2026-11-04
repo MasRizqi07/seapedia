@@ -17,10 +17,7 @@ describe('TenantIsolationInterceptor', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        TenantIsolationInterceptor,
-        { provide: PrismaService, useValue: prismaService },
-      ],
+      providers: [TenantIsolationInterceptor, { provide: PrismaService, useValue: prismaService }],
     }).compile();
 
     interceptor = module.get<TenantIsolationInterceptor>(TenantIsolationInterceptor);

@@ -5,18 +5,24 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { useAuthStore, Role } from '@/stores/auth-store';
-import { api } from '@/lib/api';
+import { useAuthStore, Role, User } from '@/stores/auth-store';
+import { api, ApiError } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ShieldAlert, Store, User, Truck } from 'lucide-react';
+import { ShieldAlert, Store, User as UserIcon, Truck } from 'lucide-react';
 
-const roleMeta = {
+const roleMeta: Record<string, { icon: React.ComponentType<{ className?: string }>; label: string }> = {
   ADMIN: { icon: ShieldAlert, label: 'System Admin' },
   SELLER: { icon: Store, label: 'Seller' },
-  BUYER: { icon: User, label: 'Buyer' },
+  BUYER: { icon: UserIcon, label: 'Buyer' },
   DRIVER: { icon: Truck, label: 'Driver' },
 };
+
+interface SelectRoleResponse {
+  user: User;
+  accessToken: string;
+  refreshToken: string;
+}
 
 export default function SelectRolePage() {
   const router = useRouter();
@@ -35,18 +41,19 @@ export default function SelectRolePage() {
 
     setLoading(true);
     try {
-      const data = await api.post<{
-        user: typeof user;
-        accessToken: string;
-        refreshToken: string;
-      }>('/api/auth/select-role', { role: selectedRole });
+      const data = await api.post<SelectRoleResponse>('/api/auth/select-role', {
+        role: selectedRole,
+      });
 
-      setAuth(data.user!, data.accessToken, data.refreshToken);
-      router.push('/dashboard');
-    } catch (err: any) {
+      if (data?.user) {
+        setAuth(data.user, data.accessToken, data.refreshToken);
+      }
+      router.push(`/${selectedRole.toLowerCase()}`);
+    } catch (err: unknown) {
+      const message = err instanceof ApiError ? err.message : 'Selection Failed';
       toast({
         title: 'Selection Failed',
-        description: err.message,
+        description: message,
         variant: 'destructive',
       });
     } finally {
@@ -82,7 +89,7 @@ export default function SelectRolePage() {
             className="grid grid-cols-1 gap-4"
           >
             {roles.map((role) => {
-              const meta = roleMeta[role as keyof typeof roleMeta];
+              const meta = roleMeta[role] || { icon: UserIcon, label: role };
               const Icon = meta.icon;
               return (
                 <div key={role} className="flex items-center space-x-2">
@@ -104,7 +111,11 @@ export default function SelectRolePage() {
             })}
           </RadioGroup>
 
-          <Button type="submit" className="w-full bg-cyan-600 hover:bg-cyan-500 text-white" disabled={!selectedRole || loading}>
+          <Button
+            type="submit"
+            className="w-full bg-cyan-600 hover:bg-cyan-500 text-white"
+            disabled={!selectedRole || loading}
+          >
             {loading ? 'Entering...' : 'Continue'}
           </Button>
         </form>

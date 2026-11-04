@@ -30,7 +30,7 @@ export function VoucherInputField({ onApply, onRemove, className, ...props }: Vo
         setState("invalid")
         setErrorMsg("Voucher code is invalid or expired.")
       }
-    } catch (e) {
+    } catch {
       setState("invalid")
       setErrorMsg("Failed to apply voucher.")
     }

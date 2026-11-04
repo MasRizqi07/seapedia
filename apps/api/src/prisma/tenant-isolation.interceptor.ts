@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NestInterceptor,
-  ExecutionContext,
-  CallHandler,
-} from '@nestjs/common';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tenantContext } from './tenant-context';
 import { PrismaService } from './prisma.service';
@@ -18,17 +13,14 @@ export class TenantIsolationInterceptor implements NestInterceptor {
 
     return new Observable((subscriber) => {
       const runWithContext = (id?: string) => {
-        tenantContext.run(
-          { storeId: id, userId: user?.userId, role: user?.activeRole },
-          () => {
-            const subscription = next.handle().subscribe({
-              next: (val) => subscriber.next(val),
-              error: (err) => subscriber.error(err),
-              complete: () => subscriber.complete(),
-            });
-            return () => subscription.unsubscribe();
-          },
-        );
+        tenantContext.run({ storeId: id, userId: user?.userId, role: user?.activeRole }, () => {
+          const subscription = next.handle().subscribe({
+            next: (val) => subscriber.next(val),
+            error: (err) => subscriber.error(err),
+            complete: () => subscriber.complete(),
+          });
+          return () => subscription.unsubscribe();
+        });
       };
 
       if (user) {
@@ -50,11 +42,14 @@ export class TenantIsolationInterceptor implements NestInterceptor {
         runWithContext(undefined);
       } else {
         // Unauthenticated request (e.g. public routes): Can fall back to client-supplied storeId
-        const storeId =
-          request.headers['x-store-id'] ||
-          request.headers['x-tenant-id'] ||
-          request.query['storeId'] ||
-          request.body['storeId'];
+        const headerStoreId = request.headers['x-store-id'] || request.headers['x-tenant-id'];
+        const queryStoreId = request.query?.storeId;
+        const bodyStoreId =
+          request.body && typeof request.body === 'object'
+            ? (request.body as Record<string, unknown>).storeId
+            : undefined;
+        const rawStoreId = headerStoreId || queryStoreId || bodyStoreId;
+        const storeId = typeof rawStoreId === 'string' ? rawStoreId : undefined;
         runWithContext(storeId);
       }
     });

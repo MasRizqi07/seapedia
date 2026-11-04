@@ -10,7 +10,7 @@ export default function DashboardIndex() {
 
   useEffect(() => {
     if (activeRole) {
-      router.replace(`/dashboard/${activeRole.toLowerCase()}`);
+      router.replace(`/${activeRole.toLowerCase()}`);
     } else {
       router.replace('/select-role');
     }

@@ -10,19 +10,11 @@ export class AdminService {
   constructor(
     private prisma: PrismaService,
     private systemConfig: SystemConfigService,
-    private scheduler: SchedulerService
+    private scheduler: SchedulerService,
   ) {}
 
   async getStats(): Promise<AdminStatsResponse> {
-    const [
-      users,
-      stores,
-      products,
-      orders,
-      vouchers,
-      promos,
-      jobs
-    ] = await Promise.all([
+    const [users, stores, products, orders, vouchers, promos, jobs] = await Promise.all([
       this.prisma.userRole.groupBy({ by: ['role'], _count: { role: true } }),
       this.prisma.store.count(),
       this.prisma.product.count(),
@@ -38,23 +30,32 @@ export class AdminService {
       where: {
         status: { in: [OrderStatus.WAITING_DRIVER, OrderStatus.SHIPPING] },
         slaDueAt: { lt: effectiveNow },
-      }
+      },
     });
 
-    const userByRole = users.reduce((acc: Record<Role, number>, curr) => {
-      acc[curr.role] = curr._count.role;
-      return acc;
-    }, {} as Record<Role, number>);
+    const userByRole = users.reduce(
+      (acc: Record<Role, number>, curr) => {
+        acc[curr.role] = curr._count.role;
+        return acc;
+      },
+      {} as Record<Role, number>,
+    );
 
-    const orderByStatus = orders.reduce((acc: Record<OrderStatus, number>, curr) => {
-      acc[curr.status] = curr._count.status;
-      return acc;
-    }, {} as Record<OrderStatus, number>);
+    const orderByStatus = orders.reduce(
+      (acc: Record<OrderStatus, number>, curr) => {
+        acc[curr.status] = curr._count.status;
+        return acc;
+      },
+      {} as Record<OrderStatus, number>,
+    );
 
-    const jobsByStatus = jobs.reduce((acc: Record<JobStatus, number>, curr) => {
-      acc[curr.status] = curr._count.status;
-      return acc;
-    }, {} as Record<JobStatus, number>);
+    const jobsByStatus = jobs.reduce(
+      (acc: Record<JobStatus, number>, curr) => {
+        acc[curr.status] = curr._count.status;
+        return acc;
+      },
+      {} as Record<JobStatus, number>,
+    );
 
     const totalUsers = Object.values(userByRole).reduce((a: number, b: number) => a + b, 0);
     const totalOrders = Object.values(orderByStatus).reduce((a: number, b: number) => a + b, 0);
@@ -89,18 +90,18 @@ export class AdminService {
       where: {
         OR: [
           { status: OrderStatus.RETURNED },
-          { 
+          {
             status: { in: [OrderStatus.WAITING_DRIVER, OrderStatus.SHIPPING] },
-            slaDueAt: { lt: effectiveNow }
-          }
-        ]
+            slaDueAt: { lt: effectiveNow },
+          },
+        ],
       },
       include: {
         store: true,
         items: { include: { product: true } },
-        history: true
+        history: true,
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
   }
 }

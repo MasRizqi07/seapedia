@@ -2,14 +2,26 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
-import { CartResponse, AddressResponse, WalletResponse, OrderResponse, DeliveryMethod } from '@seapedia/types';
+import { api, ApiError } from '@/lib/api';
+import {
+  CartResponse,
+  AddressResponse,
+  WalletResponse,
+  OrderResponse,
+  DeliveryMethod,
+} from '@seapedia/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { toast } from '@/components/ui/use-toast';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/components/ui/use-toast';
 import { formatRupiah } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth-store';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const DELIVERY_FEES = {
   [DeliveryMethod.INSTANT]: 25000,
@@ -19,16 +31,17 @@ const DELIVERY_FEES = {
 
 export default function CheckoutPage() {
   const { activeRole } = useAuthStore();
+  const { toast } = useToast();
   const router = useRouter();
-  
+
   const [cart, setCart] = useState<CartResponse | null>(null);
   const [addresses, setAddresses] = useState<AddressResponse[]>([]);
   const [wallet, setWallet] = useState<WalletResponse | null>(null);
-  
+
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>(DeliveryMethod.REGULAR);
   const [discountCode, setDiscountCode] = useState<string>('');
-  
+
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -38,22 +51,29 @@ export default function CheckoutPage() {
     Promise.all([
       api.get<CartResponse>('/api/cart'),
       api.get<AddressResponse[]>('/api/address'),
-      api.get<WalletResponse>('/api/wallet')
-    ]).then(([cartData, addressesData, walletData]) => {
-      setCart(cartData);
-      setAddresses(addressesData);
-      setWallet(walletData);
-      
-      if (addressesData.length > 0) {
-        const defaultAddr = addressesData.find(a => a.isDefault);
-        setSelectedAddressId(defaultAddr ? defaultAddr.id : addressesData[0].id);
-      }
-      setLoading(false);
-    }).catch(err => {
-      toast({ title: 'Error loading checkout data', description: err.message, variant: 'destructive' });
-      setLoading(false);
-    });
-  }, [activeRole]);
+      api.get<WalletResponse>('/api/wallet'),
+    ])
+      .then(([cartData, addressesData, walletData]) => {
+        setCart(cartData);
+        setAddresses(addressesData);
+        setWallet(walletData);
+
+        if (addressesData.length > 0) {
+          const defaultAddr = addressesData.find((a) => a.isDefault);
+          setSelectedAddressId(defaultAddr ? defaultAddr.id : addressesData[0].id);
+        }
+        setLoading(false);
+      })
+      .catch((err: unknown) => {
+        const message = err instanceof ApiError ? err.message : 'Error loading checkout data';
+        toast({
+          title: 'Error loading checkout data',
+          description: message,
+          variant: 'destructive',
+        });
+        setLoading(false);
+      });
+  }, [activeRole, toast]);
 
   const handleCheckout = async () => {
     if (!selectedAddressId) {
@@ -73,24 +93,27 @@ export default function CheckoutPage() {
         deliveryMethod,
         discountCode: discountCode || undefined,
       });
-      
+
       toast({ title: 'Order successful!' });
-      router.push(`/dashboard/buyer/orders/${order.id}`);
-    } catch (err: any) {
-      toast({ title: 'Checkout failed', description: err.message, variant: 'destructive' });
+      router.push(`/buyer/orders/${order.id}`);
+    } catch (err: unknown) {
+      const message = err instanceof ApiError ? err.message : 'Checkout failed';
+      toast({ title: 'Checkout failed', description: message, variant: 'destructive' });
       setSubmitting(false);
     }
   };
 
   if (activeRole !== 'BUYER') return null;
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div className="p-4 text-text-secondary">Loading checkout...</div>;
 
   if (!cart || cart.items.length === 0) {
     return (
       <div className="text-center py-12">
         <h1 className="text-2xl font-bold mb-4">Checkout</h1>
         <p className="text-muted-foreground">Your cart is empty.</p>
-        <Button className="mt-4" onClick={() => router.push('/products')}>Browse Products</Button>
+        <Button className="mt-4" onClick={() => router.push('/products')}>
+          Browse Products
+        </Button>
       </div>
     );
   }
@@ -115,20 +138,29 @@ export default function CheckoutPage() {
               {addresses.length === 0 ? (
                 <div>
                   <p className="text-red-500 mb-2">You need to add a delivery address first.</p>
-                  <Button variant="outline" onClick={() => router.push('/dashboard/buyer/addresses')}>
+                  <Button variant="outline" onClick={() => router.push('/buyer/addresses')}>
                     Add Address
                   </Button>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {addresses.map((addr) => (
-                    <div 
-                      key={addr.id} 
+                    <div
+                      key={addr.id}
                       className={`p-4 border rounded-lg cursor-pointer ${selectedAddressId === addr.id ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:border-slate-300'}`}
                       onClick={() => setSelectedAddressId(addr.id)}
                     >
-                      <div className="font-bold">{addr.label} {addr.isDefault && <span className="text-xs text-primary font-normal bg-primary/10 px-2 py-0.5 rounded-full ml-2">Default</span>}</div>
-                      <div className="text-sm mt-1">{addr.recipientName} - {addr.phone}</div>
+                      <div className="font-bold">
+                        {addr.label}{' '}
+                        {addr.isDefault && (
+                          <span className="text-xs text-primary font-normal bg-primary/10 px-2 py-0.5 rounded-full ml-2">
+                            Default
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-sm mt-1">
+                        {addr.recipientName} - {addr.phone}
+                      </div>
                       <div className="text-sm text-muted-foreground mt-1">{addr.fullAddress}</div>
                     </div>
                   ))}
@@ -142,7 +174,10 @@ export default function CheckoutPage() {
               <CardTitle>Delivery Method</CardTitle>
             </CardHeader>
             <CardContent>
-              <Select value={deliveryMethod} onValueChange={(val) => setDeliveryMethod(val as DeliveryMethod)}>
+              <Select
+                value={deliveryMethod}
+                onValueChange={(val) => setDeliveryMethod(val as DeliveryMethod)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select delivery method" />
                 </SelectTrigger>
@@ -157,46 +192,17 @@ export default function CheckoutPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Order Items</CardTitle>
+              <CardTitle>Voucher or Promo Code</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {cart.items.map((item) => (
-                  <div key={item.productId} className="flex justify-between items-center border-b pb-4 last:border-0 last:pb-0">
-                    <div className="flex gap-4 items-center">
-                      <div className="w-16 h-16 bg-slate-100 rounded overflow-hidden">
-                        {item.product?.imageUrl && <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" />}
-                      </div>
-                      <div>
-                        <div className="font-medium">{item.product?.name}</div>
-                        <div className="text-sm text-muted-foreground">{item.quantity} x {formatRupiah(item.product?.price || 0)}</div>
-                      </div>
-                    </div>
-                    <div className="font-bold">
-                      {formatRupiah((item.product?.price || 0) * item.quantity)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Discount Code</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Enter Voucher or Promo code"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  value={discountCode}
-                  onChange={(e) => setDiscountCode(e.target.value)}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Note: Discount will be applied to subtotal during checkout processing. 
+            <CardContent className="space-y-2">
+              <input
+                type="text"
+                placeholder="Enter promo or voucher code"
+                className="w-full p-2 border rounded-md uppercase"
+                value={discountCode}
+                onChange={(e) => setDiscountCode(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
                 Invalid codes will cause checkout to fail.
               </p>
             </CardContent>
@@ -240,8 +246,8 @@ export default function CheckoutPage() {
                 )}
               </div>
 
-              <Button 
-                className="w-full font-bold" 
+              <Button
+                className="w-full font-bold"
                 size="lg"
                 onClick={handleCheckout}
                 disabled={submitting || addresses.length === 0 || isInsufficientBalance}

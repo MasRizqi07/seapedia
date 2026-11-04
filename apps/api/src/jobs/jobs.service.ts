@@ -1,13 +1,18 @@
-import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { JobStatus, OrderStatus } from '@seapedia/types';
+import { OrderStatus } from '@seapedia/types';
 import { SystemConfigService } from '../system-config/system-config.service';
 
 @Injectable()
 export class JobsService {
   constructor(
     private prisma: PrismaService,
-    private systemConfig: SystemConfigService
+    private systemConfig: SystemConfigService,
   ) {}
 
   async getAvailableJobs() {
@@ -17,8 +22,8 @@ export class JobsService {
         order: {
           include: {
             store: true,
-          }
-        }
+          },
+        },
       },
       orderBy: { order: { createdAt: 'desc' } },
     });
@@ -33,14 +38,14 @@ export class JobsService {
             store: true,
             items: {
               include: {
-                product: true
-              }
-            }
-          }
-        }
-      }
+                product: true,
+              },
+            },
+          },
+        },
+      },
     });
-    
+
     if (!job) throw new NotFoundException('Job not found');
     return job;
   }
@@ -50,7 +55,7 @@ export class JobsService {
     const activeJob = await this.prisma.deliveryJob.findFirst({
       where: { driverId, status: 'TAKEN' },
     });
-    
+
     if (activeJob) {
       throw new BadRequestException('You already have an active job. Complete it first.');
     }
@@ -74,11 +79,11 @@ export class JobsService {
     }
 
     // Now that we securely own the job, we can update the related order inside a transaction
-    const job = await this.prisma.deliveryJob.findUnique({ 
+    const job = await this.prisma.deliveryJob.findUnique({
       where: { id: jobId },
-      include: { order: true }
+      include: { order: true },
     });
-    
+
     if (!job) {
       throw new NotFoundException('Job not found after taking it. This should not happen.');
     }
@@ -88,7 +93,7 @@ export class JobsService {
     if (job.order.deliveryMethod === 'INSTANT') slaMs = 3 * 3600 * 1000;
     else if (job.order.deliveryMethod === 'NEXT_DAY') slaMs = 24 * 3600 * 1000;
     else if (job.order.deliveryMethod === 'REGULAR') slaMs = 72 * 3600 * 1000;
-    
+
     const slaDueAt = new Date(effectiveNow.getTime() + slaMs);
 
     await this.prisma.order.update({
@@ -100,9 +105,9 @@ export class JobsService {
           create: {
             status: OrderStatus.SHIPPING,
             note: 'Pesanan sedang diantar oleh kurir',
-          }
-        }
-      }
+          },
+        },
+      },
     });
 
     return { success: true, jobId };
@@ -110,7 +115,7 @@ export class JobsService {
 
   async completeJob(driverId: string, jobId: string) {
     const job = await this.prisma.deliveryJob.findUnique({
-      where: { id: jobId }
+      where: { id: jobId },
     });
 
     if (!job || job.driverId !== driverId) {
@@ -137,9 +142,9 @@ export class JobsService {
             create: {
               status: OrderStatus.COMPLETED,
               note: 'Pesanan telah selesai diantar',
-            }
-          }
-        }
+            },
+          },
+        },
       });
     });
 
@@ -161,8 +166,8 @@ export class JobsService {
         order: {
           include: {
             store: true,
-          }
-        }
+          },
+        },
       },
       orderBy: { completedAt: 'desc' },
     });
@@ -176,11 +181,11 @@ export class JobsService {
           include: {
             store: true,
             items: {
-              include: { product: true }
-            }
-          }
-        }
-      }
+              include: { product: true },
+            },
+          },
+        },
+      },
     });
     return job || null;
   }

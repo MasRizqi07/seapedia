@@ -9,6 +9,6 @@ import { SchedulerModule } from '../scheduler/scheduler.module';
 @Module({
   imports: [PrismaModule, SystemConfigModule, SchedulerModule],
   controllers: [AdminController],
-  providers: [AdminService]
+  providers: [AdminService],
 })
 export class AdminModule {}

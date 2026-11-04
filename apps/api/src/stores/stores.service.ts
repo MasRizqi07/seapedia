@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  ConflictException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import sanitizeHtml from 'sanitize-html';
 import { CreateStoreDto, UpdateStoreDto } from './dto/create-store.dto';
@@ -33,7 +29,9 @@ export class StoresService {
     });
 
     if (nameTaken) {
-      throw new ConflictException('A store with that name already exists. Please choose a different name.');
+      throw new ConflictException(
+        'A store with that name already exists. Please choose a different name.',
+      );
     }
 
     return this.prisma.store.create({
@@ -72,7 +70,9 @@ export class StoresService {
       });
 
       if (nameTaken) {
-        throw new ConflictException('A store with that name already exists. Please choose a different name.');
+        throw new ConflictException(
+          'A store with that name already exists. Please choose a different name.',
+        );
       }
     }
 

@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuthStore } from '@/stores/auth-store';
 import { formatRupiah } from '@/lib/utils';
-import { Wallet, Activity, ArrowUpRight } from 'lucide-react';
+import { Wallet } from 'lucide-react';
 
 export default function BuyerReportsPage() {
   const { activeRole } = useAuthStore();
@@ -14,9 +14,12 @@ export default function BuyerReportsPage() {
 
   useEffect(() => {
     if (activeRole === 'BUYER') {
-      api.get<{ total: number }>('/api/buyer/reports/spending')
+      api
+        .get<{ total: number }>('/api/buyer/reports/spending')
         .then(setReport)
-        .catch(console.error)
+        .catch(() => {
+          // Fallback gracefully
+        })
         .finally(() => setLoading(false));
     }
   }, [activeRole]);

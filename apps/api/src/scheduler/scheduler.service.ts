@@ -12,7 +12,7 @@ export class SchedulerService implements OnModuleInit {
   constructor(
     private prisma: PrismaService,
     private systemConfig: SystemConfigService,
-    @InjectQueue('overdue-check') private overdueQueue: Queue
+    @InjectQueue('overdue-check') private overdueQueue: Queue,
   ) {}
 
   async onModuleInit() {
@@ -25,7 +25,7 @@ export class SchedulerService implements OnModuleInit {
           pattern: '*/5 * * * *',
         },
         jobId: 'system-overdue-sweep', // ensures uniqueness
-      }
+      },
     );
     this.logger.log('Scheduled overdue-check repeatable job');
   }
@@ -57,7 +57,11 @@ export class SchedulerService implements OnModuleInit {
         await this.prisma.$transaction(async (tx) => {
           // Double check status to ensure idempotency
           const currentOrder = await tx.order.findUnique({ where: { id: order.id } });
-          if (!currentOrder || (currentOrder.status !== OrderStatus.WAITING_DRIVER && currentOrder.status !== OrderStatus.SHIPPING)) {
+          if (
+            !currentOrder ||
+            (currentOrder.status !== OrderStatus.WAITING_DRIVER &&
+              currentOrder.status !== OrderStatus.SHIPPING)
+          ) {
             return; // skip, already processed
           }
 
@@ -70,9 +74,9 @@ export class SchedulerService implements OnModuleInit {
                 create: {
                   status: OrderStatus.RETURNED,
                   note: 'Dikembalikan: Pesanan melewati batas waktu (SLA breached)',
-                }
-              }
-            }
+                },
+              },
+            },
           });
 
           // 2. Refund wallet
@@ -82,9 +86,9 @@ export class SchedulerService implements OnModuleInit {
               type: WalletTxType.REFUND,
               amount: order.totalAmount,
               referenceOrderId: `REFUND-${order.id}`,
-            }
+            },
           });
-          
+
           await tx.wallet.update({
             where: { buyerId: order.buyerId },
             data: { balance: { increment: order.totalAmount } },

@@ -22,10 +22,7 @@ export class UserController {
   @Patch('me')
   @ApiOperation({ summary: 'Update own profile (name, phone, avatarUrl)' })
   @ApiResponse({ status: 200, description: 'Profile updated' })
-  async updateProfile(
-    @CurrentUser('userId') userId: string,
-    @Body() dto: UpdateProfileDto,
-  ) {
+  async updateProfile(@CurrentUser('userId') userId: string, @Body() dto: UpdateProfileDto) {
     // userId comes from JWT, not from body — enforcing the non-negotiable
     return this.userService.updateProfile(userId, dto);
   }

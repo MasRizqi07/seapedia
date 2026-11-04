@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { Star } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 
 type Review = {
   id: string;
@@ -30,13 +30,13 @@ export default function ReviewsPage() {
     try {
       const res = await api.get<{ data: Review[] }>('/api/reviews');
       setReviews(res.data);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // Graceful fallback
     }
   };
 
   useEffect(() => {
-    fetchReviews();
+    void fetchReviews();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -52,9 +52,10 @@ export default function ReviewsPage() {
       setName('');
       setComment('');
       setRating(5);
-      fetchReviews();
-    } catch (e: any) {
-      toast({ title: 'Error', description: e.message, variant: 'destructive' });
+      void fetchReviews();
+    } catch (e: unknown) {
+      const message = e instanceof ApiError ? e.message : 'Failed to submit review';
+      toast({ title: 'Error', description: message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -77,7 +78,10 @@ export default function ReviewsPage() {
                       <CardTitle className="text-lg text-cyan-400">{r.reviewerName}</CardTitle>
                       <div className="flex text-yellow-400">
                         {Array.from({ length: 5 }).map((_, i) => (
-                          <Star key={i} className={`h-4 w-4 ${i < r.rating ? 'fill-current' : 'text-slate-600'}`} />
+                          <Star
+                            key={i}
+                            className={`h-4 w-4 ${i < r.rating ? 'fill-current' : 'text-slate-600'}`}
+                          />
                         ))}
                       </div>
                     </div>
@@ -102,41 +106,45 @@ export default function ReviewsPage() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Name</Label>
-                  <Input 
-                    id="name" 
-                    value={name} 
-                    onChange={(e) => setName(e.target.value)} 
-                    required 
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
                     maxLength={100}
                     className="bg-slate-900 border-white/10"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="rating">Rating (1-5)</Label>
-                  <Input 
-                    id="rating" 
-                    type="number" 
-                    min={1} 
-                    max={5} 
-                    value={rating} 
-                    onChange={(e) => setRating(Number(e.target.value))} 
-                    required 
+                  <Input
+                    id="rating"
+                    type="number"
+                    min={1}
+                    max={5}
+                    value={rating}
+                    onChange={(e) => setRating(Number(e.target.value))}
+                    required
                     className="bg-slate-900 border-white/10"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="comment">Comment</Label>
-                  <textarea 
-                    id="comment" 
-                    value={comment} 
-                    onChange={(e) => setComment(e.target.value)} 
-                    required 
+                  <textarea
+                    id="comment"
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    required
                     maxLength={1000}
                     rows={4}
                     className="w-full rounded-md border border-white/10 bg-slate-900 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                   />
                 </div>
-                <Button type="submit" disabled={loading} className="w-full bg-cyan-600 hover:bg-cyan-500 text-white">
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-cyan-600 hover:bg-cyan-500 text-white"
+                >
                   {loading ? 'Submitting...' : 'Submit Review'}
                 </Button>
               </form>

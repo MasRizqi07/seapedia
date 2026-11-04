@@ -1,17 +1,5 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Body,
-  Param,
-  UseGuards,
-} from '@nestjs/common';
-import {
-  ApiTags,
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-} from '@nestjs/swagger';
+import { Controller, Post, Get, Body, Param, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { StoresService } from './stores.service';
 import { CreateStoreDto } from './dto/create-store.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -33,10 +21,7 @@ export class StoresController {
   @ApiOperation({ summary: 'Create or update store (seller only)' })
   @ApiResponse({ status: 201, description: 'Store created/updated' })
   @ApiResponse({ status: 409, description: 'Store name taken' })
-  async createOrUpdate(
-    @CurrentUser('userId') userId: string,
-    @Body() dto: CreateStoreDto,
-  ) {
+  async createOrUpdate(@CurrentUser('userId') userId: string, @Body() dto: CreateStoreDto) {
     return this.storesService.createOrUpdate(userId, dto);
   }
 

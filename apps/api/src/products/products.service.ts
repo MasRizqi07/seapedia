@@ -1,8 +1,5 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import sanitizeHtml from 'sanitize-html';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -95,9 +92,7 @@ export class ProductsService {
     const { page = 1, limit = 12, search, sortBy = 'createdAt', sortOrder = 'desc' } = query;
     const skip = (page - 1) * limit;
 
-    const where = search
-      ? { name: { contains: search, mode: 'insensitive' as const } }
-      : {};
+    const where = search ? { name: { contains: search, mode: 'insensitive' as const } } : {};
 
     const [data, total] = await Promise.all([
       this.prisma.product.findMany({
@@ -147,9 +142,13 @@ export class ProductsService {
   async update(sellerId: string, productId: string, dto: UpdateProductDto) {
     await this.verifyOwnership(sellerId, productId);
 
-    const data: any = { ...dto };
-    if (data.name) data.name = sanitizeHtml(data.name, { allowedTags: [] });
-    if (data.description) data.description = sanitizeHtml(data.description, { allowedTags: [] });
+    const data: Prisma.ProductUpdateInput = { ...dto };
+    if (typeof dto.name === 'string') {
+      data.name = sanitizeHtml(dto.name, { allowedTags: [] });
+    }
+    if (typeof dto.description === 'string') {
+      data.description = sanitizeHtml(dto.description, { allowedTags: [] });
+    }
 
     return this.prisma.product.update({
       where: { id: productId },

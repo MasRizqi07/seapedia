@@ -8,7 +8,7 @@ export class AddressService {
 
   async create(buyerId: string, dto: CreateAddressDto) {
     const addresses = await this.prisma.address.findMany({ where: { buyerId } });
-    
+
     // First address is always default
     const isFirst = addresses.length === 0;
     const isDefault = isFirst || dto.isDefault;

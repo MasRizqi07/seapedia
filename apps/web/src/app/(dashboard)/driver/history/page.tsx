@@ -80,7 +80,7 @@ export default function JobHistoryPage() {
                   <div>
                     <CardTitle className="text-sm">Order ID: {job.orderId}</CardTitle>
                     <div className="text-xs text-muted-foreground mt-1">
-                      Completed: {new Date(job.completedAt!).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
+                      Completed: {job.completedAt ? new Date(job.completedAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '-'}
                     </div>
                   </div>
                   <div className="text-right">

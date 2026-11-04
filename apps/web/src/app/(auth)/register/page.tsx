@@ -8,13 +8,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Loader2 } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
-import { useAuthStore } from '@/stores/auth-store';
+import { useAuthStore, User } from '@/stores/auth-store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Role } from '@seapedia/types';
 import {
   Card,
   CardContent,
@@ -31,9 +30,12 @@ const registerSchema = z
     password: z
       .string()
       .min(8, 'Password must be at least 8 characters')
-      .regex(/^(?=.*[A-Z])(?=.*\d)/, 'Password must contain at least 1 uppercase letter and 1 number'),
+      .regex(
+        /^(?=.*[A-Z])(?=.*\d)/,
+        'Password must contain at least 1 uppercase letter and 1 number',
+      ),
     confirmPassword: z.string(),
-    role: z.enum(['BUYER', 'SELLER', 'DRIVER']), // Exclude ADMIN for normal registration
+    role: z.enum(['BUYER', 'SELLER', 'DRIVER']),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -41,6 +43,12 @@ const registerSchema = z
   });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
+
+interface RegisterApiResponse {
+  user: User;
+  accessToken: string;
+  refreshToken: string;
+}
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -52,7 +60,6 @@ export default function RegisterPage() {
     register,
     handleSubmit,
     setValue,
-    watch,
     formState: { errors },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -65,30 +72,28 @@ export default function RegisterPage() {
     },
   });
 
-  const selectedRole = watch('role');
-
   const onSubmit = async (data: RegisterFormValues) => {
     setIsLoading(true);
     try {
-      // Exclude confirmPassword before sending to API
-      const { confirmPassword, ...apiData } = data;
-      
-      const response = await api.post<{
-        user: any;
-        accessToken: string;
-        refreshToken: string;
-      }>('/api/auth/register', apiData);
+      const apiData = {
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        role: data.role,
+      };
+
+      const response = await api.post<RegisterApiResponse>('/api/auth/register', apiData);
 
       setAuth(response.user, response.accessToken, response.refreshToken);
-      
+
       toast({
         variant: 'success',
         title: 'Account created!',
         description: 'Welcome to Seapedia.',
       });
 
-      router.push('/dashboard');
-    } catch (error) {
+      router.push(`/${data.role.toLowerCase()}`);
+    } catch (error: unknown) {
       toast({
         variant: 'destructive',
         title: 'Registration Failed',
@@ -110,7 +115,9 @@ export default function RegisterPage() {
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name" className="text-white/80">Full Name</Label>
+            <Label htmlFor="name" className="text-white/80">
+              Full Name
+            </Label>
             <Input
               id="name"
               placeholder="John Doe"
@@ -119,9 +126,11 @@ export default function RegisterPage() {
             />
             {errors.name && <p className="text-sm text-red-400">{errors.name.message}</p>}
           </div>
-          
+
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-white/80">Email</Label>
+            <Label htmlFor="email" className="text-white/80">
+              Email
+            </Label>
             <Input
               id="email"
               type="email"
@@ -136,27 +145,47 @@ export default function RegisterPage() {
             <Label className="text-white/80">Account Type</Label>
             <RadioGroup
               defaultValue="BUYER"
-              onValueChange={(val: any) => setValue('role', val)}
+              onValueChange={(val: 'BUYER' | 'SELLER' | 'DRIVER') => setValue('role', val)}
               className="flex gap-4 pt-2"
             >
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="BUYER" id="role-buyer" className="border-white/50 text-teal-400" />
-                <Label htmlFor="role-buyer" className="text-white cursor-pointer">Buyer</Label>
+                <RadioGroupItem
+                  value="BUYER"
+                  id="role-buyer"
+                  className="border-white/50 text-teal-400"
+                />
+                <Label htmlFor="role-buyer" className="text-white cursor-pointer">
+                  Buyer
+                </Label>
               </div>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="SELLER" id="role-seller" className="border-white/50 text-teal-400" />
-                <Label htmlFor="role-seller" className="text-white cursor-pointer">Seller</Label>
+                <RadioGroupItem
+                  value="SELLER"
+                  id="role-seller"
+                  className="border-white/50 text-teal-400"
+                />
+                <Label htmlFor="role-seller" className="text-white cursor-pointer">
+                  Seller
+                </Label>
               </div>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="DRIVER" id="role-driver" className="border-white/50 text-teal-400" />
-                <Label htmlFor="role-driver" className="text-white cursor-pointer">Driver</Label>
+                <RadioGroupItem
+                  value="DRIVER"
+                  id="role-driver"
+                  className="border-white/50 text-teal-400"
+                />
+                <Label htmlFor="role-driver" className="text-white cursor-pointer">
+                  Driver
+                </Label>
               </div>
             </RadioGroup>
             {errors.role && <p className="text-sm text-red-400">{errors.role.message}</p>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-white/80">Password</Label>
+            <Label htmlFor="password" className="text-white/80">
+              Password
+            </Label>
             <Input
               id="password"
               type="password"
@@ -167,14 +196,18 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword" className="text-white/80">Confirm Password</Label>
+            <Label htmlFor="confirmPassword" className="text-white/80">
+              Confirm Password
+            </Label>
             <Input
               id="confirmPassword"
               type="password"
               className="bg-black/20 border-white/10 text-white focus-visible:ring-teal-500"
               {...register('confirmPassword')}
             />
-            {errors.confirmPassword && <p className="text-sm text-red-400">{errors.confirmPassword.message}</p>}
+            {errors.confirmPassword && (
+              <p className="text-sm text-red-400">{errors.confirmPassword.message}</p>
+            )}
           </div>
 
           <Button

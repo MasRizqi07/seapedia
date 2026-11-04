@@ -8,6 +8,6 @@ import { SystemConfigModule } from '../system-config/system-config.module';
 @Module({
   imports: [PrismaModule, SystemConfigModule],
   controllers: [JobsController],
-  providers: [JobsService]
+  providers: [JobsService],
 })
 export class JobsModule {}

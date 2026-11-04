@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { RoleSwitcher } from '@/components/RoleSwitcher';
@@ -10,29 +10,40 @@ import {
   Waves,
   LogOut,
   LayoutDashboard,
-  Settings,
   Store,
   Package,
   Wallet,
   ShoppingCart,
+  ShoppingBag,
   MapPin,
   Truck,
-  Users,
-  Shield,
   Ticket,
   Tag,
   AlertCircle,
-  Bell
+  Bell,
+  FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/stores/auth-store';
+import { api } from '@/lib/api';
 
 type NavItem = { label: string; href: string; icon: React.ReactNode };
 
 const ROLE_NAV: Record<string, NavItem[]> = {
+  buyer: [
+    { label: 'Catalog', href: '/buyer', icon: <Package className="h-5 w-5" /> },
+    { label: 'Cart', href: '/buyer/cart', icon: <ShoppingCart className="h-5 w-5" /> },
+    { label: 'My Orders', href: '/buyer/orders', icon: <ShoppingBag className="h-5 w-5" /> },
+    { label: 'Addresses', href: '/buyer/addresses', icon: <MapPin className="h-5 w-5" /> },
+    { label: 'My Wallet', href: '/buyer/wallet', icon: <Wallet className="h-5 w-5" /> },
+    { label: 'Reports', href: '/buyer/reports', icon: <FileText className="h-5 w-5" /> },
+  ],
   seller: [
     { label: 'Dashboard', href: '/seller', icon: <LayoutDashboard className="h-5 w-5" /> },
     { label: 'My Store', href: '/seller/store', icon: <Store className="h-5 w-5" /> },
     { label: 'Products', href: '/seller/products', icon: <Package className="h-5 w-5" /> },
+    { label: 'Orders', href: '/seller/orders', icon: <ShoppingBag className="h-5 w-5" /> },
+    { label: 'Reports', href: '/seller/reports', icon: <FileText className="h-5 w-5" /> },
   ],
   driver: [
     { label: 'Dashboard', href: '/driver', icon: <LayoutDashboard className="h-5 w-5" /> },
@@ -45,36 +56,64 @@ const ROLE_NAV: Record<string, NavItem[]> = {
     { label: 'Vouchers', href: '/admin/vouchers', icon: <Ticket className="h-5 w-5" /> },
     { label: 'Promos', href: '/admin/promos', icon: <Tag className="h-5 w-5" /> },
     { label: 'Overdue Orders', href: '/admin/overdue', icon: <AlertCircle className="h-5 w-5" /> },
-    { label: 'Users', href: '/admin/users', icon: <Users className="h-5 w-5" /> },
-    { label: 'System', href: '/admin/system', icon: <Shield className="h-5 w-5" /> },
   ],
 };
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+interface WalletData {
+  balance: number;
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  
-  let activeRole = "buyer";
-  if (pathname.startsWith("/seller")) activeRole = "seller";
-  else if (pathname.startsWith("/driver")) activeRole = "driver";
-  else if (pathname.startsWith("/admin")) activeRole = "admin";
+  const { user, logout } = useAuthStore();
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+
+  let activeRole = 'buyer';
+  if (pathname.startsWith('/seller')) activeRole = 'seller';
+  else if (pathname.startsWith('/driver')) activeRole = 'driver';
+  else if (pathname.startsWith('/admin')) activeRole = 'admin';
+
+  useEffect(() => {
+    if (user) {
+      api
+        .get<WalletData>('/api/wallet')
+        .then((res) => {
+          if (res && typeof res.balance === 'number') {
+            setWalletBalance(res.balance);
+          }
+        })
+        .catch(() => {
+          // Non-blocking fallback
+        });
+    }
+  }, [user, pathname]);
+
+  const handleLogout = async () => {
+    try {
+      await api.post('/api/auth/logout');
+    } catch {
+      // Ignored
+    } finally {
+      logout();
+      router.push('/login');
+    }
+  };
 
   const navItems = ROLE_NAV[activeRole] || [];
 
   return (
     <div className="min-h-screen bg-bg-void flex flex-col md:flex-row">
-      {/* Sidebar - Desktop Only for now */}
+      {/* Sidebar */}
       <aside className="w-full md:w-64 border-b md:border-b-0 md:border-r border-glass-border bg-bg-surface flex flex-col">
         <div className="h-16 flex items-center px-6 border-b border-glass-border">
           <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <div className="bg-accent-buyer-500/20 p-1.5 rounded-lg text-accent-buyer-500">
               <Waves className="h-5 w-5" />
             </div>
-            <span className="font-heading font-bold tracking-tight text-lg text-text-primary">SEAPEDIA</span>
+            <span className="font-heading font-bold tracking-tight text-lg text-text-primary">
+              SEAPEDIA
+            </span>
           </Link>
         </div>
 
@@ -100,7 +139,11 @@ export default function DashboardLayout({
         </nav>
 
         <div className="p-4 border-t border-glass-border">
-          <Button variant="ghost" className="w-full justify-start text-text-secondary hover:text-text-primary" onClick={() => router.push('/login')}>
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-text-secondary hover:text-text-primary"
+            onClick={handleLogout}
+          >
             <LogOut className="mr-2 h-4 w-4" />
             Log out
           </Button>
@@ -116,11 +159,18 @@ export default function DashboardLayout({
               {activeRole} Portal
             </h1>
           </div>
-          
+
           <div className="flex items-center gap-4">
-            <WalletBalancePill balance={150000} onTopUp={() => {}} className="hidden sm:flex" />
-            
-            <button className="p-2 rounded-full text-text-secondary hover:text-text-primary hover:bg-bg-surface-raised transition-colors relative">
+            <WalletBalancePill
+              balance={walletBalance}
+              onTopUp={() => router.push('/buyer/wallet')}
+              className="hidden sm:flex"
+            />
+
+            <button
+              aria-label="Notifications"
+              className="p-2 rounded-full text-text-secondary hover:text-text-primary hover:bg-bg-surface-raised transition-colors relative"
+            >
               <Bell className="w-5 h-5" />
               <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-danger" />
             </button>
@@ -133,9 +183,7 @@ export default function DashboardLayout({
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-gradient-to-br from-bg-void to-bg-surface">
-          <div className="mx-auto max-w-6xl">
-            {children}
-          </div>
+          <div className="mx-auto max-w-6xl">{children}</div>
         </main>
       </div>
     </div>

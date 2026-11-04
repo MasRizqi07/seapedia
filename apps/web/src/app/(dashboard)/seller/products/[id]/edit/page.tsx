@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,12 +39,13 @@ export default function EditProductPage() {
           imageUrl: product.imageUrl || '',
         });
       })
-      .catch((err) => {
-        toast({ title: 'Error', description: err.message, variant: 'destructive' });
-        router.push('/dashboard/seller/products');
+      .catch((err: unknown) => {
+        const message = err instanceof ApiError ? err.message : 'Failed to fetch product';
+        toast({ title: 'Error', description: message, variant: 'destructive' });
+        router.push('/seller/products');
       })
       .finally(() => setLoading(false));
-  }, [productId]);
+  }, [productId, router, toast]);
 
   const updateField = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -64,9 +65,10 @@ export default function EditProductPage() {
       });
 
       toast({ title: 'Product updated!', description: `${form.name} has been saved.` });
-      router.push('/dashboard/seller/products');
-    } catch (err: any) {
-      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+      router.push('/seller/products');
+    } catch (err: unknown) {
+      const message = err instanceof ApiError ? err.message : 'Failed to update product';
+      toast({ title: 'Error', description: message, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -83,7 +85,7 @@ export default function EditProductPage() {
   return (
     <div className="space-y-6 animate-in fade-in zoom-in duration-500">
       <div className="flex items-center gap-4">
-        <Link href="/dashboard/seller/products">
+        <Link href="/seller/products">
           <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white">
             <ArrowLeft className="mr-1 h-4 w-4" />
             Back
@@ -111,6 +113,7 @@ export default function EditProductPage() {
                 id="name"
                 value={form.name}
                 onChange={(e) => updateField('name', e.target.value)}
+                placeholder="e.g., Fresh Atlantic Salmon"
                 required
                 minLength={3}
                 maxLength={200}
@@ -124,6 +127,7 @@ export default function EditProductPage() {
                 id="description"
                 value={form.description}
                 onChange={(e) => updateField('description', e.target.value)}
+                placeholder="Describe your product in detail..."
                 required
                 minLength={10}
                 maxLength={2000}
@@ -140,6 +144,7 @@ export default function EditProductPage() {
                   type="number"
                   value={form.price}
                   onChange={(e) => updateField('price', e.target.value)}
+                  placeholder="150000"
                   required
                   min={1000}
                   className="bg-slate-900 border-white/10"
@@ -153,6 +158,7 @@ export default function EditProductPage() {
                   type="number"
                   value={form.stock}
                   onChange={(e) => updateField('stock', e.target.value)}
+                  placeholder="50"
                   required
                   min={0}
                   className="bg-slate-900 border-white/10"
@@ -166,10 +172,12 @@ export default function EditProductPage() {
                 id="imageUrl"
                 value={form.imageUrl}
                 onChange={(e) => updateField('imageUrl', e.target.value)}
+                placeholder="https://images.example.com/product.jpg"
                 className="bg-slate-900 border-white/10"
               />
             </div>
 
+            {/* Image Preview */}
             {form.imageUrl && (
               <div className="rounded-xl overflow-hidden border border-white/10 h-48">
                 <img

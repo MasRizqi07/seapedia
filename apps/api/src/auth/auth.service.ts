@@ -157,7 +157,7 @@ export class AuthService {
     }
 
     // Attempt to parse the old JWT to preserve activeRole if possible
-    // (In a real app we might pass activeRole from the refresh token, 
+    // (In a real app we might pass activeRole from the refresh token,
     // but the refresh token only has sub). Let's re-run the default determination.
     const flatRoles = user.roles.map((ur) => ur.role);
     const activeRole = this.determineInitialActiveRole(flatRoles);
@@ -191,7 +191,12 @@ export class AuthService {
     return this.sanitizeUser(user);
   }
 
-  private async generateTokens(userId: string, username: string, roles: Role[], activeRole: Role | null) {
+  private async generateTokens(
+    userId: string,
+    username: string,
+    roles: Role[],
+    activeRole: Role | null,
+  ) {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
         { sub: userId, username, roles, activeRole },

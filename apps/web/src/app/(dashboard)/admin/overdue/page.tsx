@@ -93,7 +93,7 @@ export default function OverdueOrdersPage() {
                 {order.status !== 'RETURNED' && (
                   <div className="flex items-center gap-2 text-sm text-amber-600 mt-2 bg-amber-100/50 p-2 rounded">
                     <AlertCircle className="w-4 h-4" />
-                    <span>This order has breached its SLA ({new Date(order.slaDueAt!).toLocaleString('id-ID')}) and will be refunded in the next sweep.</span>
+                    <span>This order has breached its SLA ({order.slaDueAt ? new Date(order.slaDueAt).toLocaleString('id-ID') : '-'}) and will be refunded in the next sweep.</span>
                   </div>
                 )}
               </CardContent>

@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ExecutionContext, Injectable, CanActivate } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AuthController } from './auth/auth.controller';
 import { ProductsController } from './products/products.controller';

@@ -44,15 +44,15 @@ export default function ProductsPage() {
         `/api/products?${params.toString()}`,
       );
       setData(result);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      // Graceful error fallback
     } finally {
       setLoading(false);
     }
   }, [page, sortBy, sortOrder, debouncedSearch]);
 
   useEffect(() => {
-    fetchProducts();
+    void fetchProducts();
   }, [fetchProducts]);
 
   const handleSort = (field: 'createdAt' | 'price') => {
@@ -141,7 +141,9 @@ export default function ProductsPage() {
                     </div>
 
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-lg text-cyan-400 line-clamp-1">{product.name}</CardTitle>
+                      <CardTitle className="text-lg text-cyan-400 line-clamp-1">
+                        {product.name}
+                      </CardTitle>
                       <CardDescription className="text-slate-400 line-clamp-1">
                         {product.store?.name || 'Unknown Store'}
                       </CardDescription>
@@ -152,7 +154,9 @@ export default function ProductsPage() {
                           Rp {product.price.toLocaleString('id-ID')}
                         </span>
                         {product.stock === 0 ? (
-                          <Badge variant="destructive" className="text-xs">Sold out</Badge>
+                          <Badge variant="destructive" className="text-xs">
+                            Sold out
+                          </Badge>
                         ) : product.stock <= 10 ? (
                           <Badge className="bg-yellow-600 text-white text-xs">Low stock</Badge>
                         ) : null}

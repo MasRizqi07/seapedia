@@ -1,18 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 import { WalletResponse, WalletTransactionResponse } from '@seapedia/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { formatRupiah } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth-store';
 
 export default function BuyerWalletPage() {
   const { activeRole } = useAuthStore();
+  const { toast } = useToast();
   const [wallet, setWallet] = useState<WalletResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [topupAmount, setTopupAmount] = useState('');
@@ -22,8 +23,9 @@ export default function BuyerWalletPage() {
     try {
       const data = await api.get<WalletResponse>('/api/wallet');
       setWallet(data);
-    } catch (err: any) {
-      toast({ title: 'Error loading wallet', description: err.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      const message = err instanceof ApiError ? err.message : 'Error loading wallet';
+      toast({ title: 'Error loading wallet', description: message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -32,15 +34,15 @@ export default function BuyerWalletPage() {
   const fetchTransactions = async () => {
     try {
       const data = await api.get<WalletTransactionResponse[]>('/api/wallet/transactions');
-      setWallet((prev) => prev ? { ...prev, transactions: data } : null);
-    } catch (err: any) {
-      console.error('Error loading transactions', err);
+      setWallet((prev) => (prev ? { ...prev, transactions: data } : null));
+    } catch {
+      // Non-blocking fallback
     }
   };
 
   useEffect(() => {
     if (activeRole === 'BUYER') {
-      fetchWallet().then(fetchTransactions);
+      void fetchWallet().then(fetchTransactions);
     }
   }, [activeRole]);
 
@@ -48,7 +50,11 @@ export default function BuyerWalletPage() {
     e.preventDefault();
     const amount = parseInt(topupAmount, 10);
     if (isNaN(amount) || amount < 1000) {
-      toast({ title: 'Invalid amount', description: 'Minimum top up is Rp 1.000', variant: 'destructive' });
+      toast({
+        title: 'Invalid amount',
+        description: 'Minimum top up is Rp 1.000',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -57,9 +63,10 @@ export default function BuyerWalletPage() {
       await api.post('/api/wallet/topup', { amount });
       toast({ title: 'Top up successful!' });
       setTopupAmount('');
-      fetchWallet().then(fetchTransactions);
-    } catch (err: any) {
-      toast({ title: 'Top up failed', description: err.message, variant: 'destructive' });
+      void fetchWallet().then(fetchTransactions);
+    } catch (err: unknown) {
+      const message = err instanceof ApiError ? err.message : 'Top up failed';
+      toast({ title: 'Top up failed', description: message, variant: 'destructive' });
     } finally {
       setToppingUp(false);
     }
@@ -67,7 +74,7 @@ export default function BuyerWalletPage() {
 
   if (activeRole !== 'BUYER') return null;
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div className="p-4 text-text-secondary">Loading wallet...</div>;
 
   return (
     <div className="space-y-6">
@@ -113,17 +120,27 @@ export default function BuyerWalletPage() {
             {wallet?.transactions && wallet.transactions.length > 0 ? (
               <div className="space-y-4">
                 {wallet.transactions.map((tx) => (
-                  <div key={tx.id} className="flex justify-between items-center p-3 border rounded-lg bg-background/50">
+                  <div
+                    key={tx.id}
+                    className="flex justify-between items-center p-3 border rounded-lg bg-background/50"
+                  >
                     <div>
                       <div className="font-medium">{tx.type}</div>
                       <div className="text-sm text-muted-foreground">
                         {new Date(tx.createdAt).toLocaleDateString('id-ID', {
-                          day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
                         })}
                       </div>
                     </div>
-                    <div className={`font-bold ${tx.type === 'TOPUP' ? 'text-green-600' : 'text-red-600'}`}>
-                      {tx.type === 'TOPUP' ? '+' : '-'}{formatRupiah(tx.amount)}
+                    <div
+                      className={`font-bold ${tx.type === 'TOPUP' ? 'text-green-600' : 'text-red-600'}`}
+                    >
+                      {tx.type === 'TOPUP' ? '+' : '-'}
+                      {formatRupiah(tx.amount)}
                     </div>
                   </div>
                 ))}

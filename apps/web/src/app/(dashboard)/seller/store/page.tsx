@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,7 @@ export default function StoreManagementPage() {
   };
 
   useEffect(() => {
-    fetchStore();
+    void fetchStore();
   }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -41,8 +41,9 @@ export default function StoreManagementPage() {
       const data = await api.post<StoreResponse>('/api/seller/store', { name: storeName });
       setStore(data);
       toast({ title: 'Store updated!', description: `Welcome to ${data.name}` });
-    } catch (err: any) {
-      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      const message = err instanceof ApiError ? err.message : 'Error creating store';
+      toast({ title: 'Error', description: message, variant: 'destructive' });
     } finally {
       setCreating(false);
     }
@@ -103,13 +104,17 @@ export default function StoreManagementPage() {
           <Store className="h-8 w-8 text-cyan-400" />
           Create Your Store
         </h2>
-        <p className="text-slate-300 mt-2">Set up your store to start listing products and earning revenue.</p>
+        <p className="text-slate-300 mt-2">
+          Set up your store to start listing products and earning revenue.
+        </p>
       </div>
 
       <Card className="glass border-white/10 bg-white/5 max-w-lg">
         <CardHeader>
           <CardTitle className="text-white">Store Details</CardTitle>
-          <CardDescription>Choose a unique name for your store. This will be visible to buyers.</CardDescription>
+          <CardDescription>
+            Choose a unique name for your store. This will be visible to buyers.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleCreate} className="space-y-4">

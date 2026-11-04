@@ -29,6 +29,8 @@ describe('JwtAuthGuard', () => {
 
     // The AuthGuard('jwt') relies on passport under the hood.
     // If we call handleRequest with no user, it should throw UnauthorizedException
-    expect(() => guard.handleRequest(null, null, new Error('No auth token'), mockContext)).toThrow(UnauthorizedException);
+    expect(() => guard.handleRequest(null, null, new Error('No auth token'), mockContext)).toThrow(
+      UnauthorizedException,
+    );
   });
 });

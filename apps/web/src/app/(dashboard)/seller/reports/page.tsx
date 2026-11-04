@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuthStore } from '@/stores/auth-store';
 import { formatRupiah } from '@/lib/utils';
-import { Landmark, TrendingUp } from 'lucide-react';
+import { Landmark } from 'lucide-react';
 
 export default function SellerReportsPage() {
   const { activeRole } = useAuthStore();
@@ -14,9 +14,12 @@ export default function SellerReportsPage() {
 
   useEffect(() => {
     if (activeRole === 'SELLER') {
-      api.get<{ total: number }>('/api/seller/reports/income')
+      api
+        .get<{ total: number }>('/api/seller/reports/income')
         .then(setReport)
-        .catch(console.error)
+        .catch(() => {
+          // Graceful fallback
+        })
         .finally(() => setLoading(false));
     }
   }, [activeRole]);

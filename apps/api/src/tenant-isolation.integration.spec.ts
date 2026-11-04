@@ -7,15 +7,21 @@ import { PrismaService } from './prisma/prisma.service';
 import { tenantContext } from './prisma/tenant-context';
 import { OrdersController } from './orders/orders.controller';
 import { OrdersService } from './orders/orders.service';
+import { SystemConfigService } from './system-config/system-config.service';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { App } from 'supertest/types';
 
+type MockPrismaService = {
+  store: { findUnique: jest.Mock };
+  order: { findMany: jest.Mock };
+};
+
 describe('Tenant Isolation Integration Test', () => {
   let app: INestApplication<App>;
-  let prismaService: any;
-  let ordersService: any;
-  let mockUser: any = null;
+  let prismaService: MockPrismaService;
+  let ordersService: OrdersService;
+  let mockUser: unknown = null;
 
   beforeAll(async () => {
     prismaService = {
@@ -26,14 +32,15 @@ describe('Tenant Isolation Integration Test', () => {
         findMany: jest.fn().mockImplementation(() => {
           // Verify current tenant context inside the prisma call
           const context = tenantContext.getStore();
-          return Promise.resolve([
-            { id: 'order-1', storeId: context?.storeId }
-          ]);
+          return Promise.resolve([{ id: 'order-1', storeId: context?.storeId }]);
         }),
       },
     };
 
-    ordersService = new OrdersService(prismaService as any, { effectiveNow: () => new Date() } as any);
+    ordersService = new OrdersService(
+      prismaService as unknown as PrismaService,
+      { effectiveNow: () => new Date() } as unknown as SystemConfigService,
+    );
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       controllers: [OrdersController],
@@ -80,9 +87,7 @@ describe('Tenant Isolation Integration Test', () => {
       .set('x-store-id', 'spoofed-store-b-id')
       .expect(200);
 
-    expect(response.body).toEqual([
-      { id: 'order-1', storeId: 'store-a-id' }
-    ]);
+    expect(response.body).toEqual([{ id: 'order-1', storeId: 'store-a-id' }]);
     expect(prismaService.store.findUnique).toHaveBeenCalledWith({
       where: { sellerId: 'seller-a-id' },
     });

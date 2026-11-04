@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 import { CartResponse } from '@seapedia/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { formatRupiah } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth-store';
 import { Minus, Plus, Trash2 } from 'lucide-react';
@@ -14,7 +13,7 @@ import Link from 'next/link';
 
 export default function BuyerCartPage() {
   const { activeRole } = useAuthStore();
-  const router = useRouter();
+  const { toast } = useToast();
   const [cart, setCart] = useState<CartResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -22,15 +21,16 @@ export default function BuyerCartPage() {
     try {
       const data = await api.get<CartResponse>('/api/cart');
       setCart(data);
-    } catch (err: any) {
-      toast({ title: 'Error loading cart', description: err.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      const message = err instanceof ApiError ? err.message : 'Error loading cart';
+      toast({ title: 'Error loading cart', description: message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (activeRole === 'BUYER') fetchCart();
+    if (activeRole === 'BUYER') void fetchCart();
   }, [activeRole]);
 
   const updateQuantity = async (productId: string, quantity: number) => {
@@ -38,8 +38,9 @@ export default function BuyerCartPage() {
     try {
       const data = await api.patch<CartResponse>(`/api/cart/items/${productId}`, { quantity });
       setCart(data);
-    } catch (err: any) {
-      toast({ title: 'Error updating quantity', description: err.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      const message = err instanceof ApiError ? err.message : 'Error updating quantity';
+      toast({ title: 'Error updating quantity', description: message, variant: 'destructive' });
     }
   };
 
@@ -48,8 +49,9 @@ export default function BuyerCartPage() {
       const data = await api.delete<CartResponse>(`/api/cart/items/${productId}`);
       setCart(data);
       toast({ title: 'Item removed' });
-    } catch (err: any) {
-      toast({ title: 'Error removing item', description: err.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      const message = err instanceof ApiError ? err.message : 'Error removing item';
+      toast({ title: 'Error removing item', description: message, variant: 'destructive' });
     }
   };
 
@@ -59,21 +61,24 @@ export default function BuyerCartPage() {
       const data = await api.delete<CartResponse>('/api/cart');
       setCart(data);
       toast({ title: 'Cart cleared' });
-    } catch (err: any) {
-      toast({ title: 'Error clearing cart', description: err.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      const message = err instanceof ApiError ? err.message : 'Error clearing cart';
+      toast({ title: 'Error clearing cart', description: message, variant: 'destructive' });
     }
   };
 
   if (activeRole !== 'BUYER') return null;
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div className="p-4 text-text-secondary">Loading cart...</div>;
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">My Cart</h1>
         {cart && cart.items.length > 0 && (
-          <Button variant="destructive" onClick={clearCart}>Clear Cart</Button>
+          <Button variant="destructive" onClick={clearCart}>
+            Clear Cart
+          </Button>
         )}
       </div>
 
@@ -94,7 +99,11 @@ export default function BuyerCartPage() {
                 <CardContent className="p-4 flex gap-4">
                   <div className="w-24 h-24 bg-slate-100 rounded flex-shrink-0 flex items-center justify-center overflow-hidden">
                     {item.product?.imageUrl ? (
-                      <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" />
+                      <img
+                        src={item.product.imageUrl}
+                        alt={item.product.name}
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
                       <span className="text-muted-foreground text-xs">No Image</span>
                     )}
@@ -109,15 +118,27 @@ export default function BuyerCartPage() {
                     </div>
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
-                        <Button size="icon" variant="outline" onClick={() => updateQuantity(item.productId, item.quantity - 1)}>
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                        >
                           <Minus className="w-4 h-4" />
                         </Button>
                         <span className="w-8 text-center">{item.quantity}</span>
-                        <Button size="icon" variant="outline" onClick={() => updateQuantity(item.productId, item.quantity + 1)}>
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                        >
                           <Plus className="w-4 h-4" />
                         </Button>
                       </div>
-                      <Button size="icon" variant="destructive" onClick={() => removeItem(item.productId)}>
+                      <Button
+                        size="icon"
+                        variant="destructive"
+                        onClick={() => removeItem(item.productId)}
+                      >
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
@@ -126,7 +147,7 @@ export default function BuyerCartPage() {
               </Card>
             ))}
           </div>
-          
+
           <div>
             <Card className="sticky top-6">
               <CardHeader>

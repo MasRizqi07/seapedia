@@ -37,12 +37,12 @@ export class SystemConfigService implements OnModuleInit {
   async simulateNextDay() {
     if (!this.configId) return;
     const ONE_DAY_MS = 24 * 60 * 60 * 1000;
-    
+
     const config = await this.prisma.systemConfig.update({
       where: { id: this.configId },
       data: { clockOffsetMs: { increment: ONE_DAY_MS } },
     });
-    
+
     this.offsetCache = config.clockOffsetMs;
     return this.effectiveNow();
   }

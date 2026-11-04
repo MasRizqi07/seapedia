@@ -1,19 +1,5 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Body,
-  UseGuards,
-  HttpCode,
-  HttpStatus,
-  Req,
-} from '@nestjs/common';
-import {
-  ApiTags,
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-} from '@nestjs/swagger';
+import { Controller, Post, Get, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -22,7 +8,6 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
-import { Request } from 'express';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -42,7 +27,7 @@ export class AuthController {
   @Post('login')
   @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Login with email and password' })
+  @ApiOperation({ summary: 'Login and get tokens' })
   @ApiResponse({ status: 200, description: 'Login successful' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body() dto: LoginDto) {
@@ -53,13 +38,10 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Select active role and get new token' })
-  @ApiResponse({ status: 200, description: 'Role selected successfully' })
-  @ApiResponse({ status: 403, description: 'User does not own this role' })
-  async selectRole(
-    @CurrentUser('userId') userId: string,
-    @Body() dto: SelectRoleDto,
-  ) {
+  @ApiOperation({ summary: 'Switch active role and reissue token' })
+  @ApiResponse({ status: 200, description: 'Role selected, new token issued' })
+  @ApiResponse({ status: 403, description: 'User does not possess this role' })
+  async selectRole(@CurrentUser('userId') userId: string, @Body() dto: SelectRoleDto) {
     return this.authService.selectRole(userId, dto.role);
   }
 
@@ -70,10 +52,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Refresh access token using refresh token' })
   @ApiResponse({ status: 200, description: 'Tokens refreshed' })
   @ApiResponse({ status: 403, description: 'Invalid or expired refresh token' })
-  async refresh(
-    @CurrentUser() user: { userId: string; refreshToken: string },
-    @Req() _req: Request,
-  ) {
+  async refresh(@CurrentUser() user: { userId: string; refreshToken: string }) {
     return this.authService.refreshTokens(user.userId, user.refreshToken);
   }
 
@@ -91,10 +70,9 @@ export class AuthController {
   @Get('me')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Get current authenticated user profile' })
-  @ApiResponse({ status: 200, description: 'User profile' })
-  @ApiResponse({ status: 401, description: 'Not authenticated' })
-  async getProfile(@CurrentUser('userId') userId: string) {
+  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({ status: 200, description: 'User profile retrieved' })
+  async me(@CurrentUser('userId') userId: string) {
     return this.authService.getProfile(userId);
   }
 }

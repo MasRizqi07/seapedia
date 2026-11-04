@@ -24,7 +24,7 @@ export function SLACountdownBadge({
 
   React.useEffect(() => {
     const interval = setInterval(() => {
-      setRemainingSeconds(prev => {
+      setRemainingSeconds(() => {
         const next = Math.floor((endTime.getTime() - Date.now()) / 1000)
         if (next <= 0) {
           clearInterval(interval)

@@ -3,8 +3,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUrl,
-  Max,
   MaxLength,
   Min,
   MinLength,
@@ -19,7 +17,10 @@ export class CreateProductDto {
   @MaxLength(200)
   name: string;
 
-  @ApiProperty({ example: 'Premium wild-caught salmon, perfect for sushi and grilling.', description: '10-2000 chars' })
+  @ApiProperty({
+    example: 'Premium wild-caught salmon, perfect for sushi and grilling.',
+    description: '10-2000 chars',
+  })
   @IsString()
   @IsNotEmpty()
   @MinLength(10)

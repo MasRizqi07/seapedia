@@ -3,7 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useAuthStore } from '@/stores/auth-store';
+import { useAuthStore, User } from '@/stores/auth-store';
 import { api, ApiError } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,7 +55,7 @@ export default function SettingsPage() {
         avatarUrl: data.avatarUrl || undefined,
       };
 
-      const updatedUser = await api.patch<any>('/api/users/me', payload);
+      const updatedUser = await api.patch<User>('/api/users/me', payload);
 
       if (accessToken && refreshToken) {
         setAuth(updatedUser, accessToken, refreshToken);

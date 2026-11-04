@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutDto } from './dto/order.dto';
 import { DeliveryMethod, OrderStatus, WalletTxType } from '@prisma/client';
@@ -14,7 +19,7 @@ const DELIVERY_FEES = {
 export class OrdersService {
   constructor(
     private prisma: PrismaService,
-    private systemConfig: SystemConfigService
+    private systemConfig: SystemConfigService,
   ) {}
 
   async checkout(buyerId: string, dto: CheckoutDto) {
@@ -39,7 +44,10 @@ export class OrdersService {
       }
 
       // 3. Compute Totals
-      const subtotal = cart.items.reduce((acc, item) => acc + item.quantity * item.product.price, 0);
+      const subtotal = cart.items.reduce(
+        (acc, item) => acc + item.quantity * item.product.price,
+        0,
+      );
 
       let discountAmount = 0;
       let voucherId = null;
@@ -49,9 +57,13 @@ export class OrdersService {
         const voucher = await tx.voucher.findUnique({ where: { code: dto.discountCode } });
         if (voucher) {
           if (voucher.expiryDate < new Date()) throw new BadRequestException('Voucher expired');
-          if (voucher.usedCount >= voucher.usageLimit) throw new BadRequestException('Voucher usage limit reached');
-          
-          discountAmount = voucher.discountType === 'FIXED' ? voucher.value : Math.floor(subtotal * (voucher.value / 100));
+          if (voucher.usedCount >= voucher.usageLimit)
+            throw new BadRequestException('Voucher usage limit reached');
+
+          discountAmount =
+            voucher.discountType === 'FIXED'
+              ? voucher.value
+              : Math.floor(subtotal * (voucher.value / 100));
           voucherId = voucher.id;
 
           await tx.voucher.update({
@@ -62,8 +74,11 @@ export class OrdersService {
           const promo = await tx.promo.findUnique({ where: { code: dto.discountCode } });
           if (promo) {
             if (promo.expiryDate < new Date()) throw new BadRequestException('Promo expired');
-            
-            discountAmount = promo.discountType === 'FIXED' ? promo.value : Math.floor(subtotal * (promo.value / 100));
+
+            discountAmount =
+              promo.discountType === 'FIXED'
+                ? promo.value
+                : Math.floor(subtotal * (promo.value / 100));
             promoId = promo.id;
           } else {
             throw new BadRequestException('Invalid discount code');
@@ -220,14 +235,15 @@ export class OrdersService {
     });
 
     if (!order) throw new NotFoundException('Order not found');
-    if (order.status !== OrderStatus.PACKING) throw new BadRequestException('Order must be in PACKING status to process');
+    if (order.status !== OrderStatus.PACKING)
+      throw new BadRequestException('Order must be in PACKING status to process');
 
     const effectiveNow = this.systemConfig.effectiveNow();
     let slaMs = 0;
     if (order.deliveryMethod === 'INSTANT') slaMs = 3 * 3600 * 1000;
     else if (order.deliveryMethod === 'NEXT_DAY') slaMs = 24 * 3600 * 1000;
     else if (order.deliveryMethod === 'REGULAR') slaMs = 72 * 3600 * 1000;
-    
+
     const slaDueAt = new Date(effectiveNow.getTime() + slaMs);
 
     return this.prisma.order.update({
@@ -265,7 +281,10 @@ export class OrdersService {
     const orders = await this.prisma.order.findMany({
       where: { storeId: store.id, status: OrderStatus.COMPLETED },
     });
-    const totalIncome = orders.reduce((acc, order) => acc + (order.subtotal - order.discountAmount), 0);
+    const totalIncome = orders.reduce(
+      (acc, order) => acc + (order.subtotal - order.discountAmount),
+      0,
+    );
     return { total: totalIncome };
   }
 }

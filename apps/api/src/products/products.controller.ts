@@ -11,12 +11,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-} from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -39,10 +34,7 @@ export class ProductsController {
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Create a product (seller only)' })
   @ApiResponse({ status: 201, description: 'Product created' })
-  async create(
-    @CurrentUser('userId') userId: string,
-    @Body() dto: CreateProductDto,
-  ) {
+  async create(@CurrentUser('userId') userId: string, @Body() dto: CreateProductDto) {
     return this.productsService.create(userId, dto);
   }
 
@@ -79,10 +71,7 @@ export class ProductsController {
   @ApiOperation({ summary: 'Delete a product (seller only, own product)' })
   @ApiResponse({ status: 200, description: 'Product deleted' })
   @ApiResponse({ status: 403, description: 'Not your product' })
-  async remove(
-    @CurrentUser('userId') userId: string,
-    @Param('id') id: string,
-  ) {
+  async remove(@CurrentUser('userId') userId: string, @Param('id') id: string) {
     return this.productsService.remove(userId, id);
   }
 

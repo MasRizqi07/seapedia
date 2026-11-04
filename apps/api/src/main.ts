@@ -31,14 +31,8 @@ async function bootstrap() {
     .setTitle('Seapedia API')
     .setDescription('🌊 Fresh seafood marketplace API')
     .setVersion('1.0')
-    .addBearerAuth(
-      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
-      'access-token',
-    )
-    .addApiKey(
-      { type: 'apiKey', name: 'X-Active-Role', in: 'header' },
-      'active-role',
-    )
+    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'access-token')
+    .addApiKey({ type: 'apiKey', name: 'X-Active-Role', in: 'header' }, 'active-role')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
@@ -51,4 +45,7 @@ async function bootstrap() {
   console.log(`📚 Swagger docs at http://localhost:${port}/api/docs`);
 }
 
-bootstrap();
+bootstrap().catch((err: unknown) => {
+  console.error('Failed to start Seapedia API:', err);
+  process.exit(1);
+});
