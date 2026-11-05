@@ -13,6 +13,9 @@ import { SystemConfigModule } from '../system-config/system-config.module';
       connection: {
         host: process.env.REDIS_HOST || 'localhost',
         port: parseInt(process.env.REDIS_PORT || '6379', 10),
+        enableOfflineQueue: false,
+        maxRetriesPerRequest: null,
+        retryStrategy: (times: number) => (times > 3 ? null : Math.min(times * 500, 2000)),
       },
     }),
     BullModule.registerQueue({

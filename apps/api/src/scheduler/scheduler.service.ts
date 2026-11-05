@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SystemConfigService } from '../system-config/system-config.service';
-import { OrderStatus, WalletTxType } from '@prisma/client';
+import { JobStatus, OrderStatus, WalletTxType } from '@prisma/client';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 
@@ -16,17 +16,20 @@ export class SchedulerService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    this.overdueQueue.on('error', (err: Error) => {
+      this.logger.debug(`Queue Redis connection error: ${err.message}`);
+    });
     try {
-    await this.overdueQueue.add(
-      'run-sweep',
-      {},
-      {
-        repeat: {
-          pattern: '*/5 * * * *',
+      await this.overdueQueue.add(
+        'run-sweep',
+        {},
+        {
+          repeat: {
+            pattern: '*/5 * * * *',
+          },
+          jobId: 'system-overdue-sweep', // ensures uniqueness
         },
-        jobId: 'system-overdue-sweep', // ensures uniqueness
-      },
-    );
+      );
       this.logger.log('Scheduled overdue-check repeatable job');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -105,6 +108,12 @@ export class SchedulerService implements OnModuleInit {
               data: { stock: { increment: item.quantity } },
             });
           }
+
+          // 4. Close associated delivery job so driver is not blocked
+          await tx.deliveryJob.updateMany({
+            where: { orderId: order.id },
+            data: { status: JobStatus.COMPLETED },
+          });
         });
         processedCount++;
       } catch (err) {

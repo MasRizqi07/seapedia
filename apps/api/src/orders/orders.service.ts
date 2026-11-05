@@ -89,8 +89,9 @@ export class OrdersService {
       if (discountAmount > subtotal) discountAmount = subtotal;
 
       const deliveryFee = DELIVERY_FEES[dto.deliveryMethod];
-      const ppnAmount = Math.floor((subtotal - discountAmount) * 0.12);
-      const totalAmount = subtotal - discountAmount + ppnAmount + deliveryFee;
+      const taxableAmount = subtotal - discountAmount + deliveryFee;
+      const ppnAmount = Math.floor(taxableAmount * 0.11);
+      const totalAmount = taxableAmount + ppnAmount;
 
       // 4. Validate Wallet Balance
       const wallet = await tx.wallet.findUnique({

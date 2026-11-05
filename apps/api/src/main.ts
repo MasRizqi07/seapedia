@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -8,6 +9,14 @@ async function bootstrap() {
 
   // Global prefix — all routes start with /api
   app.setGlobalPrefix('api');
+
+  // Security headers with helmet (configured not to block Swagger UI or CORS)
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
 
   // CORS — allow the Next.js frontend
   app.enableCors({

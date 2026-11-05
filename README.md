@@ -1,6 +1,6 @@
 # Seapedia (Level 7)
 
-Seapedia is a multi-role e-commerce marketplace supporting **Admin, Seller, Buyer**, and **Driver** workflows in a single platform. It is built as a Turborepo monorepo using Next.js 14 (App Router) and NestJS (PostgreSQL + Prisma).
+Seapedia is a multi-role e-commerce marketplace supporting **Admin, Seller, Buyer**, and **Driver** workflows in a single platform. It is built as a Turborepo monorepo using Next.js 16 (App Router with Turbopack) and NestJS 10+ (PostgreSQL + Prisma).
 
 **For a deep dive into the System Architecture, Structural Folders, and Design System, please read the [Design.md](./Design.md) document.**
 
@@ -41,7 +41,7 @@ pnpm --filter api db:generate
 # 4. Seed the database with demo accounts
 pnpm --filter api db:seed
 
-# 5. Start the development server (runs both frontend and backend)
+# 5. Start the development server (runs frontend on http://localhost:3000 and backend on http://localhost:4000)
 pnpm dev
 ```
 

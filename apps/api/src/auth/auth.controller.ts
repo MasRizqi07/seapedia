@@ -8,12 +8,14 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('register')
   @Public()
   @ApiOperation({ summary: 'Register a new user' })
@@ -24,6 +26,7 @@ export class AuthController {
     return this.authService.register(dto);
   }
 
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('login')
   @Public()
   @HttpCode(HttpStatus.OK)
@@ -45,6 +48,7 @@ export class AuthController {
     return this.authService.selectRole(userId, dto.role);
   }
 
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('refresh')
   @UseGuards(JwtRefreshGuard)
   @HttpCode(HttpStatus.OK)

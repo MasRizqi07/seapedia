@@ -5,8 +5,8 @@
 Seapedia is built as a robust, scalable, and modern full-stack web application designed for a multi-tenant e-commerce marketplace. The system adopts a **Monorepo Architecture** powered by Turborepo, allowing seamless code sharing between the frontend, backend, and shared libraries.
 
 ### High-Level Components
-1. **Client (Web)**: A Next.js 14 App Router application serving as the presentation layer.
-2. **API Server (Backend)**: A NestJS application handling business logic, authentication, and background jobs.
+1. **Client (Web)**: A Next.js 16 App Router application (Turbopack) serving as the presentation layer.
+2. **API Server (Backend)**: A NestJS 10+ application handling business logic, authentication, and background jobs.
 3. **Database Layer**: PostgreSQL serving as the primary relational database, managed via Prisma ORM.
 4. **Caching & Queueing**: Redis is utilized by BullMQ to handle delayed background tasks (like SLA Overdue Sweeps).
 
@@ -22,7 +22,7 @@ Seapedia is built as a robust, scalable, and modern full-stack web application d
 The frontend (`apps/web`) uses a heavily modern, aesthetics-focused design system.
 
 ### Tech Stack
-- **Framework**: Next.js 14 (App Router)
+- **Framework**: Next.js 16 (App Router with Turbopack)
 - **Styling**: Tailwind CSS + PostCSS
 - **Component Library**: shadcn-ui (built on top of Radix UI primitives for accessibility)
 - **State Management**: Zustand (for global state like Auth) and React Query (for server state)
@@ -56,7 +56,8 @@ seapedia/
 │       │   ├── app/         # App Router pages (auth, dashboard, landing)
 │       │   ├── components/  # Reusable UI components (shadcn)
 │       │   ├── lib/         # API clients and utility functions
-│       │   └── stores/      # Zustand state stores
+│       │   ├── stores/      # Zustand state stores
+│       │   └── proxy.ts     # Next.js 16 Edge Proxy (RBAC & auth redirects)
 │       └── public/          # Static assets (images, SVGs)
 ├── packages/
 │   ├── config/              # Shared ESLint/TypeScript configurations

@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 
 const PROTECTED_PREFIXES = ['/admin', '/seller', '/driver', '/buyer', '/dashboard'];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const authCookie = request.cookies.get('seapedia-auth');
   const activeRoleCookie = request.cookies.get('seapedia-active-role');
