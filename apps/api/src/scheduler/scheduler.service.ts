@@ -16,7 +16,7 @@ export class SchedulerService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    // Register the repeatable job every 5 minutes
+    try {
     await this.overdueQueue.add(
       'run-sweep',
       {},
@@ -27,7 +27,11 @@ export class SchedulerService implements OnModuleInit {
         jobId: 'system-overdue-sweep', // ensures uniqueness
       },
     );
-    this.logger.log('Scheduled overdue-check repeatable job');
+      this.logger.log('Scheduled overdue-check repeatable job');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Could not schedule overdue sweep (Redis offline): ${msg}`);
+    }
   }
 
   async runOverdueCheck() {
